@@ -4,8 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-mongodb = "*"
-tokio = "*"
-redis = "*"
-neo4rs = "*"
-uuid = "*"
+mongodb = "2.2.0"
+tokio = "1.17.0"
+redis = "0.21.5"
+neo4rs = "0.5.9"

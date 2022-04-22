@@ -1,7 +1,11 @@
-use mongodb::{bson::doc, bson::Document, options::ClientOptions, Collection};
+use mongodb::{
+    bson::Document,
+    bson::{doc, Uuid},
+    options::ClientOptions,
+    Collection,
+};
 use neo4rs::{query, Graph};
 use std::{error::Error, sync::Arc};
-use uuid::Uuid;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -19,7 +23,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             None,
         )
         .await
-        .expect("Insertion not possible!");
+        .expect("Insertion (MongoDB) not possible!");
     println!("Theater: {:#?}", res);
 
     let redis_client = redis::Client::open("redis://127.0.0.1/")?;
@@ -41,13 +45,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let uri = "127.0.0.1:7687";
     let user = "neo4j";
     let pass = "h6UrzYQiRBEY95";
-    let id = Uuid::new_v4().clone();
+    let id = Uuid::new().clone();
 
     let graph = Arc::new(Graph::new(&uri, user, pass).await.unwrap());
     let result = graph
-        .run(query("CREATE (p:Person {id: $id})").param("id", 2))
+        .run(query("CREATE (p:Person {id: $id})").param("id", 1))
         .await
-        .unwrap();
+        .expect("Insertion (Neo4J) not possible!");
 
     println!("{:#?}", result);
 
