@@ -14,32 +14,16 @@ import static org.neo4j.driver.Values.parameters;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-public class Neo4jDBConnect implements AutoCloseable{
+public final class Neo4jDBConnect implements AutoCloseable{
 	private final Driver driver;
 	public Neo4jDBConnect(String uri, String user, String password) {
 		driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
 	}
+	
 	public void close() throws Exception{
 		driver.close();
 	}
-	public void printGreeting (final String message) {
-		try(Session session = driver.session()){
-			String greeting = session.writeTransaction(new TransactionWork<String>() {
-			@Override
-			public String execute(Transaction tx) {
-				Result result = tx.run("CREATE (a:Greating)" + "SET a.message = $message " + "Return a.message +', from node ' + id(a)",
-						parameters("message", message));
-				return result.single().get(0).asString();
-				}
-			});
-			System.out.println(greeting);
-		}
-	}
-	public static void mainConnector() throws Exception{
-		try(Neo4jDBConnect greeter = new Neo4jDBConnect("bolt://localhost:7687","neo4j","123")){
-			greeter.printGreeting("Hello world");
-		}
-	}
+
 	//===============================================LOOKUP SECTION=======================================
 	public String LookUpDepartment(String name) {
 		String id;
@@ -60,7 +44,7 @@ public class Neo4jDBConnect implements AutoCloseable{
 	}
 	
 	
-	//===============================================CREATION SECTION=====================================
+	//===============================================CREATING INSTRUCTIONS=====================================
 	public void CreateEmergencyCodeNode(String name, String desc, String[] Dept, int i) {
 		Map<String, Object> params = new HashMap<>();
 		params.put("name", name);
@@ -70,7 +54,7 @@ public class Neo4jDBConnect implements AutoCloseable{
 				+ "MERGE (n:EmergencyCode{name: $name, description: $description}) "
 				+ "CREATE (m)-[r:Handles]->(n) " 
 				+ "SET n.name = $name, n.description = $description " 
-				+ "Return ', from node ' + id(n)";
+				+ "Return id(n)";
 		addNote(insturction, params);
 		
 		if(i < Dept.length - 1) {
@@ -92,21 +76,38 @@ public class Neo4jDBConnect implements AutoCloseable{
 		Map<String, Object> params = new HashMap<>();
 		params.put("name", name);
 		String insturction = "MERGE (n:Department{name: $name}) " + "SET n.name = $name " +
-				"Return ', from node ' + id(n)";
+				"Return id(n)";
 		addNote(insturction, params);
 	}
 	
-	public void CreateEmergencyReport() {
-		final String EmergencyCode = "Code Blue";
+	//===============================================CREATING THE EMERGENCY REPORT
+	public String CreateEmergencyReport(String code) {//The most plain
 		Map<String, Object> params = new HashMap<>();
-		params.put("EmergencyCode", EmergencyCode);
+		params.put("name", code);
 		
-		String insturction = "CREATE (n:Emergency)" + "SET n.EmergencyCode = $EmergencyCode " + 
-				"Return ', from node ' + id(n)";
+		String insturction = "MATCH (n:EmergencyCode{name: $name})"
+				+ "CREATE (m:Emergency)-[r:ReportsA]->(n)" 
+				+ "MERGE (m)-[rr:LocatedAt]->(nm:Adresse{}) "
+				+ "Return id(m)";
 		
-		addNote(insturction, params);
+		return(addNoteGetId(insturction, params));
+	}
+	
+	public String CreateEmergencyReport(final String code, String city, String zip, String street, String Nr) {//The most plain
+		addAdressInfo(city, zip, street, Nr);
 		
-		System.out.println();
+		Map<String, Object> params = new HashMap<>();
+		params.put("name", code);
+		params.put("City", city);
+		params.put("Zip", zip);
+		params.put("Street", street);
+		
+		String insturction = "MATCH (n:EmergencyCode{name: $name}), (nm:Adresse{City: $City, Zip: $Zip, Street: $Street}) "
+				+ "CREATE (m:Emergency)-[r:ReportsA]->(n) " 
+				+ "MERGE (m)-[rr:LocatedAt]->(nm) "
+				+ "Return id(m)";
+		
+		return(addNoteGetId(insturction, params));
 	}
 	
 	public void addText() {
@@ -116,26 +117,42 @@ public class Neo4jDBConnect implements AutoCloseable{
 		params.put("Text", Text);
 		
 		String insturction = "CREATE (n:NLdata)" + "SET n.Text = $Text " + 
-				"Return ', from node ' + id(n)";
+				"Return id(n)";
 		
 		addNote(insturction, params);
 	}
 	
-	public void addAdressInfo() {
-		final String City = "Heidelberg";
-		final String Zip = "69123";
-		final String Street = "MPS: 3";
+	//===============================================CREATING THE ADRESS
+	public void addAdressInfo(String City, String Zip, String Street, String Nr) {
 		Map<String, Object> params = new HashMap<>();
 		params.put("City", City);
 		params.put("Zip", Zip);
 		params.put("Street", Street);
+		params.put("Nr", Nr);
 		
-		String insturction = "CREATE (n:Adreess)" + "SET n.City = $City, n.Zip = $Zip, n.Street = $Street " + 
-				"Return ', from node ' + id(n)";
+		String insturction = "MERGE (n:Adreess{City: $City, Zip: $Zip, Street: $Street, Nr: $Nr})" 
+				+ "SET n.City = $City, n.Zip = $Zip, n.Street = $Street, n.Nr = $Nr "
+				+ "Return id(n)";
+		
+		addNote(insturction, params);
+	}
+	//===============================================EDIT THE ADRESS
+	public void addAdressInfoZip(String zip, String id) {//we can consider if this could be done better but i can't think of a great way atm
+		Map<String, Object> params = new HashMap<>();
+		params.put("Zip", zip);
+		params.put("NId", Integer.parseInt(id));
+		System.out.println(id);
+		
+		String insturction = "MATCH (nm:Emergency) "
+				+ "WHERE id(nm) = $NId "
+				+ "MATCH (nm)-[rr:LocatedAt]->(n:Adresse) "
+				+ "SET n.Zip = $Zip "
+				+ "Return id(nm)";
 		
 		addNote(insturction, params);
 	}
 	
+	//===============================================CREATING NODES=====================================	
 	private void addNote(String instructions, Map<String, Object> params) {
 		try(Session session = driver.session()){
 			session.writeTransaction(new TransactionWork<String>() {
@@ -143,10 +160,25 @@ public class Neo4jDBConnect implements AutoCloseable{
 			public String execute(Transaction tx) {
 				Result result = tx.run(instructions,
 						params);
-				return result.single().get(0).asString();
+				return result.single().get(0).toString();
 				}
 			});
 		}
+	}
+	private String addNoteGetId(String instructions, Map<String, Object> params) {
+		String id;
+		try(Session session = driver.session()){
+			id = session.writeTransaction(new TransactionWork<String>() {
+			@Override
+			public String execute(Transaction tx) {
+				Result result = tx.run(instructions,
+						params);
+				return result.single().get(0).toString();
+				}
+			});
+		}
+		
+		return id;
 	}
 	
 }
