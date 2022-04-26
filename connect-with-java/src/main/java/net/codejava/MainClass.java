@@ -19,6 +19,8 @@ public class MainClass {
 			throw e;
 		}
 		
+		Nominatim nominatimClient = new Nominatim();
+		
 		/*
 		try(Neo4jDBConnect neo4jClient = new Neo4jDBConnect("bolt://localhost:7687","neo4j","123")){
 			neo4jClient.SetupNeo4j();
@@ -44,13 +46,17 @@ public class MainClass {
 		//mapApi.test();
 		
 		//scenario
-		EmergencyReport emergencyTest = new EmergencyReport(neo4jClient);
-		emergencyTest.updateZip("69123");
+		EmergencyReport emergencyTest = new EmergencyReport(neo4jClient, "");
+		//emergencyTest.updateZip("69123");
 		
 		System.out.println("Done");
 	}
 	
 	private static void checkBaiscIsUpToDate() {//takes care of updates and such crap
+		if (neo4jClient.checkVersion(version)) {
+			return;
+		}
+		
 		neo4jClient.SetupNeo4j();
 		
 		//i used the American code names

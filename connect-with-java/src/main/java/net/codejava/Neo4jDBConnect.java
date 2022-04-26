@@ -7,12 +7,9 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionWork;
-import org.neo4j.driver.types.Node;
 
 import static org.neo4j.driver.Values.parameters;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 public final class Neo4jDBConnect implements AutoCloseable{
 	private final Driver driver;
@@ -45,17 +42,26 @@ public final class Neo4jDBConnect implements AutoCloseable{
 	
 	
 	//===============================================CREATING INSTRUCTIONS=====================================
+	public void addText() {
+		final String Text = "";
+		
+		Map<String, Object> params = Map.of("Text", Text);
+		
+		String insturction = "CREATE (n:NLdata)" + "SET n.Text = $Text " + 
+				"Return id(n)";
+		
+		addNoteGetId(insturction, params);
+	}
+	
 	public void CreateEmergencyCodeNode(String name, String desc, String[] Dept, int i) {
-		Map<String, Object> params = new HashMap<>();
-		params.put("name", name);
-		params.put("description", desc);
-		params.put("deptName", Dept[i]);
+		Map<String, Object> params = Map.of("name", name, "description", desc, "deptName", Dept[i]);
+
 		String insturction = "MATCH (m:Department{name: $deptName})"
 				+ "MERGE (n:EmergencyCode{name: $name, description: $description}) "
 				+ "CREATE (m)-[r:Handles]->(n) " 
 				+ "SET n.name = $name, n.description = $description " 
 				+ "Return id(n)";
-		addNote(insturction, params);
+		addNoteGetId(insturction, params);
 		
 		if(i < Dept.length - 1) {
 			i++;
@@ -73,98 +79,85 @@ public final class Neo4jDBConnect implements AutoCloseable{
 	}
 	
 	private void createDepartment(String name) {
-		Map<String, Object> params = new HashMap<>();
-		params.put("name", name);
+		Map<String, Object> params = Map.of("name", name);
+		
 		String insturction = "MERGE (n:Department{name: $name}) " + "SET n.name = $name " +
 				"Return id(n)";
-		addNote(insturction, params);
+		
+		addNoteGetId(insturction, params);
 	}
 	
 	//===============================================CREATING THE EMERGENCY REPORT
-	public String CreateEmergencyReport(String code) {//The most plain
-		Map<String, Object> params = new HashMap<>();
-		params.put("name", code);
+	private String CreateEmergencyReport(String code) {//The most plain
+		Map<String, Object> params = Map.of("name", code);
 		
 		String insturction = "MATCH (n:EmergencyCode{name: $name})"
 				+ "CREATE (m:Emergency)-[r:ReportsA]->(n)" 
-				+ "MERGE (m)-[rr:LocatedAt]->(nm:Adresse{}) "
 				+ "Return id(m)";
 		
 		return(addNoteGetId(insturction, params));
 	}
 	
 	public String CreateEmergencyReport(final String code, String city, String zip, String street, String Nr) {//The most plain
-		addAdressInfo(city, zip, street, Nr);
-		
-		Map<String, Object> params = new HashMap<>();
-		params.put("name", code);
-		params.put("City", city);
-		params.put("Zip", zip);
-		params.put("Street", street);
-		
-		String insturction = "MATCH (n:EmergencyCode{name: $name}), (nm:Adresse{City: $City, Zip: $Zip, Street: $Street}) "
-				+ "CREATE (m:Emergency)-[r:ReportsA]->(n) " 
-				+ "MERGE (m)-[rr:LocatedAt]->(nm) "
-				+ "Return id(m)";
-		
-		return(addNoteGetId(insturction, params));
-	}
-	
-	public void addText() {
-		final String Text = "";
-		
-		Map<String, Object> params = new HashMap<>();
-		params.put("Text", Text);
-		
-		String insturction = "CREATE (n:NLdata)" + "SET n.Text = $Text " + 
-				"Return id(n)";
-		
-		addNote(insturction, params);
+		String id = CreateEmergencyReport(code);
+		addAdressInfo(city, zip, street, Nr, id);
+		return(id);
 	}
 	
 	//===============================================CREATING THE ADRESS
-	public void addAdressInfo(String City, String Zip, String Street, String Nr) {
-		Map<String, Object> params = new HashMap<>();
-		params.put("City", City);
-		params.put("Zip", Zip);
-		params.put("Street", Street);
-		params.put("Nr", Nr);
-		
-		String insturction = "MERGE (n:Adreess{City: $City, Zip: $Zip, Street: $Street, Nr: $Nr})" 
-				+ "SET n.City = $City, n.Zip = $Zip, n.Street = $Street, n.Nr = $Nr "
-				+ "Return id(n)";
-		
-		addNote(insturction, params);
+	public void addAdressInfo(String city, String zip, String street, String nr, String id) {
+		addCity(city, addZip(zip, addStreet(street, nr, id)));
 	}
-	//===============================================EDIT THE ADRESS
-	public void addAdressInfoZip(String zip, String id) {//we can consider if this could be done better but i can't think of a great way atm
-		Map<String, Object> params = new HashMap<>();
-		params.put("Zip", zip);
-		params.put("NId", Integer.parseInt(id));
-		System.out.println(id);
+
+	private String addStreet(String street, String nr, String id) {
+		Map<String, Object> params = Map.of("Street", street, "Nr", nr, "NId", Integer.parseInt(id));
 		
 		String insturction = "MATCH (nm:Emergency) "
 				+ "WHERE id(nm) = $NId "
-				+ "MATCH (nm)-[rr:LocatedAt]->(n:Adresse) "
-				+ "SET n.Zip = $Zip "
-				+ "Return id(nm)";
+				+ "MERGE (n:Street{Street: $Street, Nr: $Nr}) "
+				+ "MERGE (nm)-[r:LocatedAt]->(n) "
+				+ "Return id(n)";
 		
-		addNote(insturction, params);
+		return addNoteGetId(insturction, params);
+	}
+
+	private String addZip(String zip, String streetId) {
+		Map<String, Object> params = Map.of("Zip", zip, "StreetId", Integer.parseInt(streetId));
+		
+		String insturction = "MATCH (nm:Street) "
+				+ "WHERE id(nm) = $StreetId "
+				+ "MERGE (n:Zip{Nr: $Zip}) "
+				+ "MERGE (nm)-[r:LocatedIn]->(n) "
+				+ "Return id(n)";
+		
+		return addNoteGetId(insturction, params);
 	}
 	
-	//===============================================CREATING NODES=====================================	
-	private void addNote(String instructions, Map<String, Object> params) {
-		try(Session session = driver.session()){
-			session.writeTransaction(new TransactionWork<String>() {
-			@Override
-			public String execute(Transaction tx) {
-				Result result = tx.run(instructions,
-						params);
-				return result.single().get(0).toString();
-				}
-			});
-		}
+	private String addCity(String city, String zipId) {
+		Map<String, Object> params = Map.of("City", city, "ZipId", Integer.parseInt(zipId));
+		
+		String insturction = "MATCH (nm:Zip) "
+				+ "WHERE id(nm) = $ZipId "
+				+ "MERGE (n:City{City: $City}) "
+				+ "MERGE (nm)-[r:LocatedIn]->(n) "
+				+ "Return id(n)";
+		
+		return addNoteGetId(insturction, params);
 	}
+	//===============================================CREATING THE VERSION
+	public boolean checkVersion(int version) {
+		Map<String, Object> params = Map.of("V", version);
+		
+		String insturction = "MERGE (n:Version{Version: $V})"
+
+				+ "Return id(n)";
+		
+		addNoteGetId(insturction, params);
+		
+		return false;
+	}
+
+	//===============================================CREATING NODES=====================================	
 	private String addNoteGetId(String instructions, Map<String, Object> params) {
 		String id;
 		try(Session session = driver.session()){

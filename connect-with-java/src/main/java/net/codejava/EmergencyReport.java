@@ -7,19 +7,18 @@ public final class EmergencyReport {
 	
 	EmergencyReport(Neo4jDBConnect neo4jClient){
 		neo4j = neo4jClient;
-		myId = neo4jClient.CreateEmergencyReport("Code Adam");
+		myId = neo4jClient.CreateEmergencyReport("Code Adam", null, null, null, null);
 	}
 	
 	EmergencyReport(Neo4jDBConnect neo4jClient, String City) throws Exception{
 		neo4j = neo4jClient;
 		myId = neo4jClient.CreateEmergencyReport("Code Adam", "Heidelberg", "69123", "MPS", "3");
-		throw new Exception("Not Implemented");
+		//throw new Exception("Not Implemented");
 	}
 	
 	
 	//=============================================FINDING THE ADRESSE======================================================
 	public void updateZip(String zip) {
-		neo4j.addAdressInfoZip(zip, myId);
 	}
 	public void updateCity() {
 		
