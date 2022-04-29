@@ -47,6 +47,9 @@ public class MainClass {
 		
 		//scenario
 		EmergencyReport emergencyTest = new EmergencyReport(neo4jClient, "");
+		
+		System.out.println("I am at");
+		System.out.println(neo4jClient.fetchGPSfromKnowAdresse(emergencyTest.myId));
 		//emergencyTest.updateZip("69123");
 		
 		System.out.println("Done");
@@ -57,6 +60,7 @@ public class MainClass {
 			return;
 		}
 		
+		//neo4jClient.createGPSTrigger();
 		neo4jClient.SetupNeo4j();
 		
 		//i used the American code names

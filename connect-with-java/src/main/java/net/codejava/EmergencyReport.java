@@ -12,7 +12,8 @@ public final class EmergencyReport {
 	
 	EmergencyReport(Neo4jDBConnect neo4jClient, String City) throws Exception{
 		neo4j = neo4jClient;
-		myId = neo4jClient.CreateEmergencyReport("Code Adam", "Heidelberg", "69123", "MPS", "3");
+		myId = neo4jClient.CreateEmergencyReport("Code Adam", "BERLIN", "10785", "Potsdamer str", "61");
+		//myId = neo4jClient.CreateEmergencyReport("Code Adam", "HEIDELBERG", "69124", "Maria Probst strasse", "3");
 		//throw new Exception("Not Implemented");
 	}
 	

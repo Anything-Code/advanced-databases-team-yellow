@@ -20,9 +20,61 @@ public final class Neo4jDBConnect implements AutoCloseable{
 	public void close() throws Exception{
 		driver.close();
 	}
+	//===============================================TRIGGER INSTRUCTIONS=======================================
+	
+	public void createGPSTrigger() {
+		Map<String, Object> params = Map.of();
+		String instructions = "CALL apoc.trigger.add('setAllConnectedNodes','UNWIND apoc.trigger.propertiesByKey($assignedNodeProperties,\"City\") AS prop"
+				+ "WITH prop.node as n"
+				+ "MATCH(n)-[]-(a)"
+				+ "SET a.surname = n.surname', {phase:'after'});";
+		
+		addNoteGetId(instructions, params);
+	}
+	
+	//===============================================LOOKUP INSTRUCTIONS=======================================
+	public String fetchKnowAdresse(String id) {
+		Map<String, Object> params = Map.of("NId", Integer.parseInt(id));
+		
+		String insturctions = "MATCH (nm:Emergency) "
+				+ "WHERE id(nm) = $NId "
+				+ "MATCH (nm)-[r:LocatedAt]->(s) "
+				+ "MATCH (s)-[r2:LocatedIn]->(z) "
+				+ "MATCH (z)-[r3:LocatedIn]->(c) "
+				+ "Return c.City + ' ' + z.Nr + ' ' + s.Street + ' ' + s.Nr ";
+		
+		return (addNoteGetId(insturctions, params));
+	}
+	
+	public String fetchGPSfromKnowAdresse(String id) {//IK IK copy paste but Readability tho
+		Map<String, Object> params = Map.of("NId", Integer.parseInt(id));
+		
+		String insturctions = "MATCH (nm:Emergency) "
+				+ "WHERE id(nm) = $NId "
+				+ "MATCH (nm)-[r1:LocatedAt]->(s) "
+				+ "MATCH (s)-[r3:LocatedIn]->(z) "
+				+ "MATCH (z)-[r4:LocatedIn]->(c) "
+				+ "CALL apoc.spatial.geocodeOnce(s.Nr + ' ' + s.Street + ' ' + z.Nr + ' ' + c.City + ' GERMANY') "
+				+ "YIELD location "
+				+ "Return location.latitude + ' ' + location.longitude";
+		
+		String GPS = addNoteGetId(insturctions, params);;/*
+		try{
+			GPS = addNoteGetId(insturctions, params);
+		}catch(Exception e){
+			GPS = "";
+		}*/
+		
+		
+		return (GPS);
+	}
 
 	//===============================================LOOKUP SECTION=======================================
-	public String LookUpDepartment(String name) {
+	
+	
+	
+	
+	public String LookUpDepartment(String name, String instructions) {//TODO kill this bad boy
 		String id;
 		try(Session session = driver.session()){
 			id = session.writeTransaction(new TransactionWork<String>() {
@@ -159,6 +211,22 @@ public final class Neo4jDBConnect implements AutoCloseable{
 
 	//===============================================CREATING NODES=====================================	
 	private String addNoteGetId(String instructions, Map<String, Object> params) {
+		String id;
+		try(Session session = driver.session()){
+			id = session.writeTransaction(new TransactionWork<String>() {
+			@Override
+			public String execute(Transaction tx) {
+				Result result = tx.run(instructions,
+						params);
+				return result.single().get(0).toString();
+				}
+			});
+		}
+		
+		return id;
+	}
+	
+	private String addNoteGetArray(String instructions, Map<String, Object> params) {
 		String id;
 		try(Session session = driver.session()){
 			id = session.writeTransaction(new TransactionWork<String>() {
