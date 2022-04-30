@@ -10,6 +10,7 @@
     "build:prod": "webpack --progress --mode production"
   },
   "dependencies": {
+    "axios": "^0.27.2",
     "faker": "^6.6.6",
     "mongodb": "^4.5.0",
     "neo4j": "^2.0.0-RC2",
