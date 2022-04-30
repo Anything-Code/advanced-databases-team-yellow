@@ -3,6 +3,7 @@ import { MongoClient } from 'mongodb';
 import { createClient } from 'redis';
 import axios from 'axios';
 
+// API-Playground here: https://nominatim.openstreetmap.org/ui/search.html?street=Alfred-Jost-Stra%C3%9Fe+38&postalcode=69124
 const getLatLong = async (
     streetAndHouseNr: string,
     city?: string,
