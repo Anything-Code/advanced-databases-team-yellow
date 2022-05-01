@@ -50,6 +50,10 @@ public class MainClass {
 		
 		System.out.println("I am at");
 		System.out.println(neo4jClient.fetchGPSfromKnowAdresse(emergencyTest.myId));
+		
+		TrueWayApi trueWayApi = new TrueWayApi();
+		System.out.println("near");
+		trueWayApi.makeTrueWayRequest();
 		//emergencyTest.updateZip("69123");
 		
 		System.out.println("Done");
