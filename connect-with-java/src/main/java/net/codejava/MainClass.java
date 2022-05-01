@@ -19,7 +19,7 @@ public class MainClass {
 			throw e;
 		}
 		
-		Nominatim nominatimClient = new Nominatim();
+		//Nominatim nominatimClient = new Nominatim();
 		
 		/*
 		try(Neo4jDBConnect neo4jClient = new Neo4jDBConnect("bolt://localhost:7687","neo4j","123")){
@@ -55,12 +55,12 @@ public class MainClass {
 		System.out.println("Done");
 	}
 	
-	private static void checkBaiscIsUpToDate() {//takes care of updates and such crap
+	private static void checkBaiscIsUpToDate() throws Exception {//takes care of updates and such crap
 		if (neo4jClient.checkVersion(version)) {
 			return;
 		}
 		
-		//neo4jClient.createGPSTrigger();
+		neo4jClient.createGPSTrigger();
 		neo4jClient.SetupNeo4j();
 		
 		//i used the American code names
