@@ -72,7 +72,7 @@ public final class Neo4jDBConnect implements AutoCloseable{
 				+ "MATCH (s)-[r3:LocatedIn]->(z) "
 				+ "MATCH (z)-[r4:LocatedInCity]->(c) "
 				+ "MATCH (g:GpsLocation)<-[r:GPSLocationAt]-(nm) "
-				+ "Return g.x + ' ' + g.y ";
+				+ "Return g.x + ',' + g.y ";
 		
 		String GPS = null;
 		
@@ -83,8 +83,31 @@ public final class Neo4jDBConnect implements AutoCloseable{
 
 	//===============================================LOOKUP SECTION=======================================
 	
+	public String fetchKnowAdresseCityZip(String id) {
+		Map<String, Object> params = Map.of("NId", Integer.parseInt(id));
+		
+		String insturctions = "MATCH (nm:Emergency) "
+				+ "WHERE id(nm) = $NId "
+				+ "MATCH (nm)-[r:LocatedAt]->(s) "
+				+ "MATCH (s)-[r2:LocatedIn]->(z) "
+				+ "MATCH (z)-[r3:LocatedInCity]->(c) "
+				+ "Return c.City + z.Nr";
+		
+		return(addNoteGetId(insturctions, params));
+	}
 	
-	
+	public boolean fetchKnowAdresseNr(String id) {
+		Map<String, Object> params = Map.of("NId", Integer.parseInt(id));
+		
+		String insturctions = "MATCH (nm:Emergency) "
+				+ "WHERE id(nm) = $NId "
+				+ "MATCH (nm)-[r:LocatedAt]->(s) "
+				+ "Return s.Nr ";
+		
+		String s = addNoteGetId(insturctions, params);
+		System.out.println(s);
+		return(s.equals("\"\""));
+	}
 	
 	public String LookUpDepartment(String name, String instructions) {//TODO kill this bad boy
 		String id;
