@@ -1,15 +1,45 @@
 use geo::{
-    algorithm::line_interpolate_point::LineInterpolatePoint, line_locate_point::LineLocatePoint,
-    prelude::HaversineLength, GeometryCollection, LineString, Point,
+    algorithm::line_interpolate_point::LineInterpolatePoint, GeometryCollection, LineString, Point,
 };
 use kml::{quick_collection, KmlReader};
 use std::path::Path;
 
-pub fn read_kml() {
+pub fn traveled_distance(speed: f64, time_passed: f64) -> f64 {
+    return speed * time_passed;
+}
+
+fn traveled_distance_ratio(total: f64, time_passed: f64, speed: f64) -> f64 {
+    let td = traveled_distance(speed, time_passed);
+
+    return td / total;
+}
+
+pub fn progress_percent(total: f64, traveled_distance: f64) -> f64 {
+    return traveled_distance / total * 100.0;
+}
+
+pub fn calc_current_coords(
+    path: &LineString<f64>,
+    length: f64,
+    time_passed: f64,
+    speed: f64,
+) -> Result<(f64, f64), &'static str> {
+    let ratio = traveled_distance_ratio(length, time_passed, speed);
+
+    if ratio > 1.0 {
+        return Err("Ratio cannot be greater than 1!");
+    }
+
+    let coords = path.line_interpolate_point(ratio).unwrap();
+
+    return Ok((coords.y(), coords.x()));
+}
+
+pub fn read_kml(filename: &str) -> LineString<f64> {
     let kml_path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("src")
         .join("static")
-        .join("polygon.kml");
+        .join(filename);
 
     let mut kml_reader = KmlReader::<_, f64>::from_path(kml_path).unwrap();
     let kml_data = kml_reader.read().unwrap();
@@ -33,11 +63,5 @@ pub fn read_kml() {
         .map(|item| Point::try_from(item).unwrap())
         .collect::<Vec<_>>();
 
-    let path = LineString::from_iter(only_points.iter().cloned());
-
-    (1..100).for_each(|x| {
-        let yo = path.line_interpolate_point(x as f64 / 100.0).unwrap();
-        println!("x: {:#?}, y: {:#?}", yo.x(), yo.y());
-    });
-    println!("\nLength of path: {:#?} m", path.haversine_length().round())
+    return LineString::from_iter(only_points.iter().cloned());
 }
