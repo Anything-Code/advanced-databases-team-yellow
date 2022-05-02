@@ -1,7 +1,7 @@
 use redis::Connection;
 use std::error::Error;
 
-fn connect() -> Result<Connection, Box<dyn Error>> {
+pub fn connect() -> Result<Connection, Box<dyn Error>> {
     let redis_client = redis::Client::open("redis://127.0.0.1")?;
     let con = redis_client
         .get_connection()
