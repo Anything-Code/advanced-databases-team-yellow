@@ -62,9 +62,21 @@ public final class Neo4jDBConnect implements AutoCloseable{
 				+ "MATCH (s)-[r3:LocatedIn]->(z) "
 				+ "MATCH (z)-[r4:LocatedInCity]->(c) "
 				+ "MERGE (g:GpsLocation)<-[r:GPSLocationAt]-(nm) "
-				+ "Return '' ";
+				+ "Return ' '";
 		
-		String GPS = addNoteGetId(insturctions, params);
+		addNoteGetId(insturctions, params);
+		
+		insturctions = "MATCH (nm:Emergency) "
+				+ "WHERE id(nm) = $NId "
+				+ "MATCH (nm)-[r1:LocatedAt]->(s) "
+				+ "MATCH (s)-[r3:LocatedIn]->(z) "
+				+ "MATCH (z)-[r4:LocatedInCity]->(c) "
+				+ "MATCH (g:GpsLocation)<-[r:GPSLocationAt]-(nm) "
+				+ "Return g.x + ' ' + g.y ";
+		
+		String GPS = null;
+		
+		try {GPS = addNoteGetId(insturctions, params);}catch(Exception e) {throw e;}
 		
 		return (GPS);
 	}
