@@ -8,8 +8,8 @@ import java.net.http.HttpResponse;
 
 public class TrueWayApi {
 	
-	public void makeTrueWayRequest() throws IOException, InterruptedException {
-		String somePlace = "Netto%20Heidelberg";
+	public void makeTrueWayRequest(String landmark, String city) throws IOException, InterruptedException {
+		String somePlace = landmark + "%20" + city;
 		
 		HttpRequest request = HttpRequest.newBuilder()
 				.uri(URI.create("https://trueway-places.p.rapidapi.com/FindPlaceByText?text="+somePlace+"&language=en"))
