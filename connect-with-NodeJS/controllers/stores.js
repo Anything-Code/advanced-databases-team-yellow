@@ -1,16 +1,16 @@
 const Store = require('../models/Store');
 
-// @desc  Get all stores
-// @route GET /api/v1/stores
+// @desc  Get all voluntarily
+// @route GET /api/v1/voluntarily
 // @access Public
-exports.getStores = async (req, res, next) => {
+exports.getvoluntarily = async (req, res, next) => {
   try {
-    const stores = await Store.find();
+    const voluntarily = await Store.find();
 
     return res.status(200).json({
       success: true,
-      count: stores.length,
-      data: stores
+      count: voluntarily.length,
+      data: voluntarily
     });
   } catch (err) {
     console.error(err);
@@ -19,7 +19,7 @@ exports.getStores = async (req, res, next) => {
 };
 
 // @desc  Create a store
-// @route POST /api/v1/stores
+// @route POST /api/v1/voluntarily
 // @access Public
 exports.addStore = async (req, res, next) => {
   try {

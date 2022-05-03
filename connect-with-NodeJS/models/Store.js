@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const geocoder = require('../utils/geocoder');
 
-const StoreSchema = new mongoose.Schema({
+const voluntarilychema = new mongoose.Schema({
   storeId: {
     type: String,
     required: [true, 'Please add a voluntarily name'],
@@ -31,7 +31,7 @@ const StoreSchema = new mongoose.Schema({
 });
 
 // Geocode & create location
-StoreSchema.pre('save', async function(next) {
+voluntarilychema.pre('save', async function(next) {
   const loc = await geocoder.geocode(this.address);
   this.location = {
     type: 'Point',
@@ -44,4 +44,4 @@ StoreSchema.pre('save', async function(next) {
   next();
 });
 
-module.exports = mongoose.model('Store', StoreSchema);
+module.exports = mongoose.model('Store', voluntarilychema);
