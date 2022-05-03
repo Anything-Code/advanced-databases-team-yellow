@@ -19,6 +19,19 @@ public final class EmergencyReport {
 	
 	
 	//=============================================FINDING THE ADRESSE======================================================
+	public boolean completedAdress() {
+		if (neo4j.fetchKnowAdresseNr(myId)) {
+			return false;
+		}
+		else {
+			return true;
+		}
+	}
+	
+	public String getCityAndZip() {
+		return neo4j.fetchKnowAdresseCityZip(myId);
+	}
+	
 	public void updateZip(String zip) {
 	}
 	public void updateCity() {
@@ -30,9 +43,6 @@ public final class EmergencyReport {
 	public void updateNr() {
 		
 	}
-	
-	
-	
 	private void addGPSLocation() {
 		
 	}	

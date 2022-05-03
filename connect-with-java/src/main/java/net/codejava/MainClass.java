@@ -46,8 +46,8 @@ public class MainClass {
 		checkBaiscIsUpToDate();
 		
 		
-		interfaceBasic();
-		
+		//interfaceBasic();
+		FrontEnd frontend = new FrontEnd(neo4jClient);
 		
 		//googleMapsApi mapApi = new googleMapsApi();
 		//mapApi.test();
