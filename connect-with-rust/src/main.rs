@@ -1,51 +1,70 @@
 // mod connect_mongodb;
 // mod connect_neo4j;
 mod connect_redis;
+mod operators;
 mod paths;
 
-use crate::paths::{progress_percent, traveled_distance};
-use geo::prelude::HaversineLength;
-use std::{error::Error, ops::Sub, time::Instant};
+use operators::PoliceCar;
+use std::sync::mpsc;
 
 // #[tokio::main]
-fn main() -> Result<(), Box<dyn Error>> {
-    let mut r_con = connect_redis::connect().unwrap();
+fn main() {
+    // println!("Starting...\n");
     // connect_mongodb::test().await?;
     // connect_neo4j::test().await;
     // connect_redis::test()?;
-    println!("Starting...\n");
+    let mut r_con = connect_redis::connect().unwrap();
+    let (tx, rx) = mpsc::sync_channel::<PoliceCar>(1000);
 
-    let path = paths::read_kml("polygon.kml");
-    let length = path.haversine_length().round();
-    let mut init_time = Instant::now();
-    let speed = 11.1; // In meters/second (40km/h)
+    let heidelberg_weststadt = paths::read_kml("heidelberg-weststadt.kml");
 
-    loop {
-        let time_diff_in_s = Instant::now().sub(init_time).as_secs_f64();
-        let td = traveled_distance(speed, time_diff_in_s);
-        let progress = progress_percent(length, td);
-        let new_coords =
-            paths::calc_current_coords(&path, length, time_diff_in_s, speed /* dyn-var */);
+    let thread1 = PoliceCar::new(
+        "BWL A 1",
+        11.1,
+        false,
+        tx.clone(),
+        heidelberg_weststadt.clone(),
+    );
+    let thread2 = PoliceCar::new(
+        "BWL A 2",
+        111.1,
+        false,
+        tx.clone(),
+        heidelberg_weststadt.clone(),
+    );
+    let thread3 = PoliceCar::new(
+        "BWL A 3",
+        1111.1,
+        false,
+        tx.clone(),
+        heidelberg_weststadt.clone(),
+    );
 
-        match new_coords {
-            Ok(v) => {
-                println!(
-                    "[{:#?}% ({:#?}m of {:#?}m) traveled in {:#?}s] Lat: {:#?}, Lon: {:#?}",
-                    progress as u64, td as u64, length as u64, time_diff_in_s as u64, v.0, v.1
-                );
-                redis::cmd("PUBLISH")
-                    .arg("test")
-                    .arg(format!("Lat: {:#?}, Lon: {:#?}", v.0, v.1))
-                    .query(&mut r_con)?;
-            }
-            Err(e) => {
-                println!("\n{:#?}", e);
-                break;
-                // init_time = Instant::now();
-            }
-        }
+    // Mby impl trait for nicenesssss!!!
+    drop(tx);
+
+    for payload in rx {
+        let message = format!(
+            "PoliceCar ({}) [{:#?}% ({:#?}m of {:#?}m) traveled in {:#?}s] Lat: {:#?}, Lon: {:#?}",
+            payload.nr,
+            payload.progress as u64,
+            payload.traveled_distance as u64,
+            payload.length as u64,
+            payload.time_diff_in_s as u64,
+            payload.coords.0,
+            payload.coords.1
+        );
+
+        println!("{}", message);
+
+        redis::cmd("PUBLISH")
+            .arg("test")
+            .arg(message)
+            .query::<()>(&mut r_con)
+            .unwrap();
     }
 
-    println!("\n1 lap done!");
-    Ok(())
+    thread1.join().unwrap();
+    thread2.join().unwrap();
+    thread3.join().unwrap();
 }

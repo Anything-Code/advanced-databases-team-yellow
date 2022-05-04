@@ -163,7 +163,7 @@ dependencies = [
  "libc",
  "num-integer",
  "num-traits",
- "time 0.1.43",
+ "time",
  "winapi",
 ]
 
@@ -197,7 +197,6 @@ dependencies = [
  "mongodb",
  "neo4rs",
  "redis",
- "time 0.3.9",
  "tokio",
 ]
 
@@ -922,15 +921,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "num_threads"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aba1801fb138d8e85e11d0fc70baf4fe1cdfffda7c6cd34a854905df588e5ed0"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "once_cell"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1447,16 +1437,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "time"
-version = "0.3.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2702e08a7a860f005826c6815dcac101b19b5eb330c27fe4a5928fec1d20ddd"
-dependencies = [
- "libc",
- "num_threads",
-]
-
-[[package]]
 name = "tinyvec"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1829,5 +1809,5 @@ dependencies = [
  "crc32fast",
  "flate2",
  "thiserror",
- "time 0.1.43",
+ "time",
 ]
