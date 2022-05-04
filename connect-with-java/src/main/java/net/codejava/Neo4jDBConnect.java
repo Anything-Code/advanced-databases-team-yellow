@@ -93,8 +93,34 @@ public final class Neo4jDBConnect implements AutoCloseable{
 				+ "MATCH (z)-[r3:LocatedInCity]->(c) "
 				+ "Return c.City + z.Nr";
 		
-		System.out.println("============================ so:" + addNoteGetId(insturctions, params));
-		return(addNoteGetId(insturctions, params));
+		String rValue = "";
+		try {
+			rValue = addNoteGetId(insturctions, params);
+		}catch(Exception e) {
+			throw e;
+		}
+		
+		return(rValue);
+	}
+	
+	public String fetchKnowZip(String id) {
+		Map<String, Object> params = Map.of("NId", Integer.parseInt(id));
+		
+		String insturctions = "MATCH (nm:Emergency) "
+				+ "WHERE id(nm) = $NId "
+				+ "MATCH (nm)-[r:LocatedAt]->(s) "
+				+ "MATCH (s)-[r2:LocatedIn]->(z) "
+				+ "MATCH (z)-[r3:LocatedInCity]->(c) "
+				+ "Return z.Nr";
+		
+		String rValue = "";
+		try {
+			rValue = addNoteGetId(insturctions, params);
+		}catch(Exception e) {
+			throw e;
+		}
+		
+		return(rValue);
 	}
 	
 	public boolean fetchKnowAdresseNr(String id) {
@@ -232,6 +258,18 @@ public final class Neo4jDBConnect implements AutoCloseable{
 		
 		return addNoteGetId(insturction, params);
 	}
+	
+	public String addZipCityRelation(String cityName, String zip) {
+		Map<String, Object> params = Map.of("CityName", cityName, "Zip", Integer.parseInt(zip));
+		
+		String insturction = "MATCH (nm:City{City: $CityName}) "
+				+ "MERGE (n:Zip{Nr: $Zip}) "
+				+ "MERGE (nm)-[r:LocatedInCity]->(n) "
+				+ "Return id(n)";
+		
+		return addNoteGetId(insturction, params);
+	}
+	
 	//===============================================CREATING THE VERSION
 	public boolean checkVersion(int version) throws Exception { //would be better to rewrite this crap but eh more for convinence than anything else
 		Map<String, Object> params = Map.of("V", version);

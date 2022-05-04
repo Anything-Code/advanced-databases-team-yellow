@@ -6,8 +6,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.bson.Document;
@@ -22,15 +25,36 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class TrueWayApi {
 	
 	MongoDBConnect mongoDB;
+	Neo4jDBConnect neo4j;
 	
-	TrueWayApi(MongoDBConnect connect){
+	TrueWayApi(MongoDBConnect connect, Neo4jDBConnect neo4j){
 		mongoDB = connect;
+		this.neo4j = neo4j;
 	}
 	
-	public double[][] makeTrueWayRequest(String landmark, String city, String neo4jId) throws IOException, InterruptedException {
-		String somePlace = landmark + "%20Germany%20" + city;
+	public void makeTrueWayRequest(String landmark, String city, String neo4jId, boolean knownZip) throws IOException, InterruptedException {
+		String somePlace = "Germany%20" + city + landmark;
+		List<String> zipCodes = new LinkedList<String>();
 		
-
+		if(!knownZip) {
+			GetGermanZips getZips = new GetGermanZips(neo4j);
+			zipCodes = getZips.getSomeZips(city);
+			
+			for(String s : zipCodes) {
+				System.out.println("====================Looking for costume zip");
+				contactAPI(city + "%20" + s + "%20" + landmark, neo4jId);
+			}
+		}
+		
+		System.out.println("====================Looking for def");
+		contactAPI(somePlace, neo4jId);
+	}
+	
+	private void contactAPI(String somePlace, String neo4jId) throws IOException, InterruptedException{
+		if(MainClass.ExtensiveSearching) {
+			TimeUnit.SECONDS.sleep(1);
+			//gotta wait cus i use dat free api :)
+		}
 		
 		HttpRequest request = HttpRequest.newBuilder()
 				.uri(URI.create("https://trueway-places.p.rapidapi.com/FindPlaceByText?text="+somePlace+"&language=en"))
@@ -40,9 +64,17 @@ public class TrueWayApi {
 				.build();
 		HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 		System.out.println(response.body().toString());
+		System.out.println(response.toString());
 		
 		JSONObject myObj = new JSONObject(response.body());
-		JSONArray responses = myObj.getJSONArray("results");
+		JSONArray responses;
+		try {
+			responses = myObj.getJSONArray("results");
+		}catch(Exception e) {
+			System.out.println("====================NAAAAAAAAA that shit was wack");
+			return;
+		}
+		
 		
 		System.out.println(responses.length());
 		
@@ -60,9 +92,7 @@ public class TrueWayApi {
 			mongoDB.createEmergencyZone(neo4jId, latAlng[0]+"", latAlng[1]+"");
 		}
 		
-		return cordinates;
 	}
-	
 
 
 }

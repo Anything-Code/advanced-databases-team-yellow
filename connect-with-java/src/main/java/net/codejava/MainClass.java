@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class MainClass {
+	public static boolean ExtensiveSearching = true;
 	private static int version = 1;
 	static Neo4jDBConnect neo4jClient;
 	static MongoDBConnect mongoClient;

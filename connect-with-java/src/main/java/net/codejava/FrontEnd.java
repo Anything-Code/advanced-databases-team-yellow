@@ -51,7 +51,7 @@ public final class FrontEnd {
 	FrontEnd(Neo4jDBConnect client, MongoDBConnect mongoClient){
 		neo4jClient = client;
 		mongoDB = mongoClient;
-		trueWayApi  = new TrueWayApi(mongoDB);
+		trueWayApi  = new TrueWayApi(mongoDB, neo4jClient);
 		
         JFrame.setDefaultLookAndFeelDecorated(true);
         JFrame frame = new JFrame("Emergency Application");
@@ -169,7 +169,8 @@ public final class FrontEnd {
 			Location = emergencyTest.getCityAndZip().replace("\"", "");
 			System.out.println("Its near");
 			System.out.println(Location + nearField.getText());
-			trueWayApi.makeTrueWayRequest(Location, nearField.getText(), emergencyTest.myId);
+			
+			trueWayApi.makeTrueWayRequest(nearField.getText(), Location, emergencyTest.myId, emergencyTest.checkValidZip());
 		}
 		System.out.println(Location);
 		
