@@ -10,6 +10,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
+import org.bson.Document;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -20,8 +21,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TrueWayApi {
 	
-	public String makeTrueWayRequest(String landmark, String city) throws IOException, InterruptedException {
-		String somePlace = landmark + "%20" + city;
+	MongoDBConnect mongoDB;
+	
+	TrueWayApi(MongoDBConnect connect){
+		mongoDB = connect;
+	}
+	
+	public double[][] makeTrueWayRequest(String landmark, String city, String neo4jId) throws IOException, InterruptedException {
+		String somePlace = landmark + "%20Germany%20" + city;
+		
+
 		
 		HttpRequest request = HttpRequest.newBuilder()
 				.uri(URI.create("https://trueway-places.p.rapidapi.com/FindPlaceByText?text="+somePlace+"&language=en"))
@@ -32,32 +41,26 @@ public class TrueWayApi {
 		HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 		System.out.println(response.body().toString());
 		
-		String lat = "";
-		String lng = "";
+		JSONObject myObj = new JSONObject(response.body());
+		JSONArray responses = myObj.getJSONArray("results");
 		
-		char[] responseChar = response.body().toCharArray();
-		for(int i = 0; i < responseChar.length-1; i++) {
-			if(responseChar[i] == '\"' &&
-					responseChar[i+1] == 'l' &&
-					responseChar[i+2] == 'a' &&
-					responseChar[i+3] == 't' &&
-					responseChar[i+4] == '\"' ) {
-					i += 7;
-					while(responseChar[i] != ',') {
-						lat += responseChar[i];
-						i++;
-					}
-					i += 17;
-					while(responseChar[i] != '\n') {
-						lng += responseChar[i];
-						i++;
-					}
-			}
+		System.out.println(responses.length());
+		
+		double[][] cordinates = new double[responses.length()][2];
+		
+		for(int i = 0; i < responses.length(); i++) {
+			JSONObject JObj = responses.getJSONObject(0);
+			JSONObject JObjLoc = JObj.getJSONObject("location");
+			
+			cordinates[i][0] = JObjLoc.getDouble("lat");
+			cordinates[i][1] = JObjLoc.getDouble("lng");
 		}
 		
-		System.out.println("===================================" + lat + " " + lng);
+		for(double[] latAlng : cordinates) {
+			mongoDB.createEmergencyZone(neo4jId, latAlng[0]+"", latAlng[1]+"");
+		}
 		
-		return lat + "," + lng;
+		return cordinates;
 	}
 	
 

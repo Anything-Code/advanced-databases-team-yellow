@@ -5,27 +5,53 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.Locale;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import javax.swing.WindowConstants;
 
-public class FrontEnd {
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
+import static com.teamdev.jxbrowser.engine.RenderingMode.HARDWARE_ACCELERATED;
+
+import com.teamdev.jxbrowser.browser.Browser;
+import com.teamdev.jxbrowser.engine.Engine;
+import com.teamdev.jxbrowser.engine.EngineOptions;
+import com.teamdev.jxbrowser.view.swing.BrowserView;
+import java.awt.BorderLayout;
+import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
+
+import com.teamdev.jxbrowser.browser.Browser;
+import com.teamdev.jxbrowser.engine.Engine;
+import com.teamdev.jxbrowser.engine.EngineOptions;
+import com.teamdev.jxbrowser.view.swing.BrowserView;
+
+import javax.swing.*;
+import java.awt.*;
+
+public final class FrontEnd {
 	
-	TrueWayApi trueWayApi = new TrueWayApi();
+	TrueWayApi trueWayApi;
     JPanel textPanel, panelForTextFields, completionPanel, rmPanel;
     JLabel titleLabel, cityLabel, zipLabel, streetLabel, nrLabel, userLabel, passLabel, nearLabel;
     JTextField cityField, zipField, streetField, nrField, nearField;
     JButton searchButton, addNearby;
     Neo4jDBConnect neo4jClient;
+    MongoDBConnect mongoDB;
 	
-	FrontEnd(Neo4jDBConnect client){
+	FrontEnd(Neo4jDBConnect client, MongoDBConnect mongoClient){
 		neo4jClient = client;
+		mongoDB = mongoClient;
+		trueWayApi  = new TrueWayApi(mongoDB);
 		
         JFrame.setDefaultLookAndFeelDecorated(true);
         JFrame frame = new JFrame("Emergency Application");
@@ -35,6 +61,7 @@ public class FrontEnd {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(750, 500);
         frame.setVisible(true);
+        
 		
 	}
 	
@@ -130,7 +157,7 @@ public class FrontEnd {
 	}
 	
 	private void searchAction(ActionEvent e) throws Exception {
-		EmergencyReport emergencyTest = new EmergencyReport(neo4jClient, "Code Adam", cityField.getText(), zipField.getText(), streetField.getText(), nrField.getText());
+		EmergencyReport emergencyTest = new EmergencyReport(mongoDB, neo4jClient, "Code Adam", cityField.getText(), zipField.getText(), streetField.getText(), nrField.getText());
 		String Location = "";
 		
 		if(emergencyTest.completedAdress()) {
@@ -142,11 +169,14 @@ public class FrontEnd {
 			Location = emergencyTest.getCityAndZip().replace("\"", "");
 			System.out.println("Its near");
 			System.out.println(Location + nearField.getText());
-			Location = trueWayApi.makeTrueWayRequest(Location, nearField.getText());
+			trueWayApi.makeTrueWayRequest(Location, nearField.getText(), emergencyTest.myId);
 		}
 		System.out.println(Location);
 		
-		String url_open ="https://www.google.com/maps/place/" + Location;
+		PassToMap passMap = new PassToMap(mongoDB);
+		passMap.makeData();
+		
+		String url_open ="file:///C:/Users/Emil/eclipse-workspace/ConnectDBUsingJava/src/main/java/web/map.html";
 		java.awt.Desktop.getDesktop().browse(java.net.URI.create(url_open));
 	}
 	
