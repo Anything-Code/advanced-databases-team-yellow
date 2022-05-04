@@ -5,15 +5,17 @@
   "license": "MIT",
   "scripts": {
     "start": "yarn ts-node ./src/index.ts",
+    "seed": "yarn ts-node ./src/seeder.ts",
     "build": "yarn build:prod",
     "build:dev": "webpack --progress --mode development",
     "build:prod": "webpack --progress --mode production"
   },
   "dependencies": {
+    "@faker-js/faker": "^6.3.1",
     "axios": "^0.27.2",
-    "faker": "^6.6.6",
+    "immutable": "^4.0.0",
     "mongodb": "^4.5.0",
-    "neo4j": "^2.0.0-RC2",
+    "neo4j-driver": "^4.4.5",
     "redis": "^4.0.6",
     "ts-node": "^10.7.0"
   },
