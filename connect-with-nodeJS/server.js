@@ -7,6 +7,7 @@ const connectDB = require('./config/db');
 // load env vars
 dotenv.config({path:'./config/config.env'});
 console.log(process.env.MONGO_URI);
+
 // connect to database
 connectDB();
 
