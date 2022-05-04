@@ -169,7 +169,7 @@ public final class FrontEnd {
 			Location = emergencyTest.getCityAndZip().replace("\"", "");
 			System.out.println("Its near");
 			System.out.println(Location + nearField.getText());
-			Location = trueWayApi.makeTrueWayRequest(Location, nearField.getText(), emergencyTest.myId);
+			trueWayApi.makeTrueWayRequest(Location, nearField.getText(), emergencyTest.myId);
 		}
 		System.out.println(Location);
 		
