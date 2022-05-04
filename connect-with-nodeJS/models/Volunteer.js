@@ -32,15 +32,17 @@ const VolunteerSchema = new mongoose.Schema({
     }
 });
 
-//* goecode & create location
+//* goecode create location -> address to latitude & longitude
 VolunteerSchema.pre('save', async function(next) {
     const loc = await geocoder.geocode(this.address);
-    console.log(loc);
-    // this.location = {
-    //     type: 'Point',
-    //     coordinates: [loc[0].longitude, loc[0].latitude],
-    //     formattedAddress: loc[0].formattedAddress
-    // };
+    this.location = {
+        type: 'Point',
+        coordinates: [loc[0].longitude, loc[0].latitude],
+        formattedAddress: loc[0].formattedAddress
+    };
 
+    // Do not save address
+    this.address = undefined;
+    next();
 });
 module.exports = mongoose.model('Volunteer', VolunteerSchema);
