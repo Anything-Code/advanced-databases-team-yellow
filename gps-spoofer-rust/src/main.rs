@@ -28,14 +28,14 @@ fn main() {
     let thread2 = PoliceCar::new(
         "BWL A 2",
         111.1,
-        false,
+        true,
         tx.clone(),
         heidelberg_weststadt.clone(),
     );
     let thread3 = PoliceCar::new(
         "BWL A 3",
         1111.1,
-        false,
+        true,
         tx.clone(),
         heidelberg_weststadt.clone(),
     );
