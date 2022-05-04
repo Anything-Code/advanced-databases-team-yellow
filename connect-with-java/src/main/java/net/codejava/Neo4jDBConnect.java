@@ -93,6 +93,7 @@ public final class Neo4jDBConnect implements AutoCloseable{
 				+ "MATCH (z)-[r3:LocatedInCity]->(c) "
 				+ "Return c.City + z.Nr";
 		
+		System.out.println("============================ so:" + addNoteGetId(insturctions, params));
 		return(addNoteGetId(insturctions, params));
 	}
 	

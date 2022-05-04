@@ -20,8 +20,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TrueWayApi {
 	
-	public String makeTrueWayRequest(String landmark, String city) throws IOException, InterruptedException {
-		String somePlace = landmark + "%20" + city;
+	MongoDBConnect mongoDB;
+	
+	TrueWayApi(MongoDBConnect connect){
+		mongoDB = connect;
+	}
+	
+	public String makeTrueWayRequest(String landmark, String city, String neo4jId) throws IOException, InterruptedException {
+		String somePlace = landmark + "%20Germany%20" + city;
 		
 		HttpRequest request = HttpRequest.newBuilder()
 				.uri(URI.create("https://trueway-places.p.rapidapi.com/FindPlaceByText?text="+somePlace+"&language=en"))
@@ -55,6 +61,8 @@ public class TrueWayApi {
 			}
 		}
 		
+		//Circle location = new Circe(lng, lat, 0.1);
+		mongoDB.createEmergencyZone(neo4jId, lat, lng);
 		System.out.println("===================================" + lat + " " + lng);
 		
 		return lat + "," + lng;
