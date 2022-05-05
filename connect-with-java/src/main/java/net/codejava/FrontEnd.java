@@ -6,6 +6,7 @@ import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Locale;
 
 import javax.swing.JButton;
@@ -43,11 +44,14 @@ public final class FrontEnd {
 	TrueWayApi trueWayApi;
     JPanel textPanel, panelForTextFields, completionPanel, rmPanel;
     JLabel titleLabel, cityLabel, zipLabel, streetLabel, nrLabel, userLabel, passLabel, nearLabel;
+    JList nearLocationL;
     JTextField cityField, zipField, streetField, nrField, nearField;
     JButton searchButton, addNearby;
     Neo4jDBConnect neo4jClient;
     MongoDBConnect mongoDB;
-	
+    DefaultListModel<String> nearPlaces = new DefaultListModel<>();
+    LinkedList<String> placePass = new LinkedList<String>();
+    
 	FrontEnd(Neo4jDBConnect client, MongoDBConnect mongoClient){
 		neo4jClient = client;
 		mongoDB = mongoClient;
@@ -119,7 +123,7 @@ public final class FrontEnd {
         searchButton = new JButton("Search");
         searchButton.setBounds(0,165,95,30);
         searchButton.addActionListener(new ActionListener() {
-			@Override
+			
 			public void actionPerformed(ActionEvent e) {
 				try {
 					searchAction(e);
@@ -142,18 +146,42 @@ public final class FrontEnd {
         nearField = textBox(40, nearField);
         rmPanel.add(nearField);
         
+        addNearby = new JButton("Add Nearby");
+        addNearby.setBounds(0, 80, 120, 30);
+        addNearby.addActionListener(new ActionListener() {
+			
+			public void actionPerformed(ActionEvent e) {
+				try {
+					addNearLocation(e);
+				} catch (Exception e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}});
+        rmPanel.add(addNearby);
+        
         String[] optionsToChoose = {"Code Adam", "Code Blue", "Code Brown", "Code Clear", "Code Gray", "Code Orange",
         		"Code Pink", "Code Red", "Code Silver", "Code White", "Code Violet", "Code Green", "Code Black",
         		"External triage", "Internal triage", "Rapid response team"};
 
         JComboBox<String> jComboBox = new JComboBox<>(optionsToChoose);
-        jComboBox.setBounds(0, 95, 95, 30);
+        jComboBox.setBounds(0, 166, 95, 30);
         rmPanel.add(jComboBox);
         totalGUI.add(rmPanel);
+        
+        nearLocationL = new JList<>(nearPlaces);
+        nearLocationL.setLocation(370, 40);
+        nearLocationL.setSize(200, 300);
+        totalGUI.add(nearLocationL);
 
         totalGUI.setOpaque(true);    
         return totalGUI;
 		
+	}
+	
+	private void addNearLocation(ActionEvent e) {
+		placePass.add(nearField.getText());
+		nearPlaces.addElement(nearField.getText());
 	}
 	
 	private void searchAction(ActionEvent e) throws Exception {
@@ -170,7 +198,9 @@ public final class FrontEnd {
 			System.out.println("Its near");
 			System.out.println(Location + nearField.getText());
 			
-			trueWayApi.makeTrueWayRequest(nearField.getText(), Location, emergencyTest.myId, emergencyTest.checkValidZip());
+			for(String field : placePass) {
+				trueWayApi.makeTrueWayRequest(field, Location, emergencyTest.myId, emergencyTest.checkValidZip());
+			}
 		}
 		System.out.println(Location);
 		

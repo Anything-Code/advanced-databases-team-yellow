@@ -32,25 +32,55 @@ public class TrueWayApi {
 		this.neo4j = neo4j;
 	}
 	
-	public void makeTrueWayRequest(String landmark, String city, String neo4jId, boolean knownZip) throws IOException, InterruptedException {
+	public void makeTrueWayRequest(String landmark, String city, String neo4jId, boolean knownZip) throws Exception {
 		String somePlace = "Germany%20" + city + landmark;
 		List<String> zipCodes = new LinkedList<String>();
 		
+		double[][] cordinateList;
+		
+		int i = 0;
 		if(!knownZip) {
 			GetGermanZips getZips = new GetGermanZips(neo4j);
 			zipCodes = getZips.getSomeZips(city);
 			
+			cordinateList = new double[zipCodes.size() + 1][];
+			
 			for(String s : zipCodes) {
 				System.out.println("====================Looking for costume zip");
-				contactAPI(city + "%20" + s + "%20" + landmark, neo4jId);
+				double[] temp = contactAPI(city + "%20" + s + "%20" + landmark, neo4jId);
+				if(temp.length != 0) {
+					cordinateList[i] = temp;
+				}
+				 
+				i++;
 			}
+		}
+		else {
+			cordinateList = new double[1][];
 		}
 		
 		System.out.println("====================Looking for def");
-		contactAPI(somePlace, neo4jId);
+		cordinateList[i] = contactAPI(somePlace, neo4jId);
+		
+		double[] lng = new double[cordinateList.length];
+		double[] lat = new double[cordinateList.length];
+		i = 0;
+		
+		for(double[] a : cordinateList) {
+			if(a.length == 0 || a == null) {
+				continue;
+			}
+			
+			System.out.println(a[0] + " " + a[1]);
+			lat[i] = a[0];
+			lng[i] = a[1];
+			
+			i++;
+		}
+		mongoDB.createEmergencyZone(neo4jId, lat, lng, landmark);
 	}
 	
-	private void contactAPI(String somePlace, String neo4jId) throws IOException, InterruptedException{
+	private double[] contactAPI(String somePlace, String neo4jId) throws IOException, InterruptedException{
 		if(MainClass.ExtensiveSearching) {
 			TimeUnit.SECONDS.sleep(1);
 			//gotta wait cus i use dat free api :)
@@ -72,25 +102,25 @@ public class TrueWayApi {
 			responses = myObj.getJSONArray("results");
 		}catch(Exception e) {
 			System.out.println("====================NAAAAAAAAA that shit was wack");
-			return;
+			return new double[0];
 		}
 		
 		
 		System.out.println(responses.length());
 		
-		double[][] cordinates = new double[responses.length()][2];
+		double[] cordinates = new double[2];
 		
-		for(int i = 0; i < responses.length(); i++) {
-			JSONObject JObj = responses.getJSONObject(0);
-			JSONObject JObjLoc = JObj.getJSONObject("location");
-			
-			cordinates[i][0] = JObjLoc.getDouble("lat");
-			cordinates[i][1] = JObjLoc.getDouble("lng");
-		}
+		JSONObject JObj = responses.getJSONObject(0);
+		JSONObject JObjLoc = JObj.getJSONObject("location");
 		
+		cordinates[0] = JObjLoc.getDouble("lat");
+		cordinates[1] = JObjLoc.getDouble("lng");
+		
+		return cordinates;
+		/*
 		for(double[] latAlng : cordinates) {
 			mongoDB.createEmergencyZone(neo4jId, latAlng[0]+"", latAlng[1]+"");
-		}
+		}*/
 		
 	}
 
