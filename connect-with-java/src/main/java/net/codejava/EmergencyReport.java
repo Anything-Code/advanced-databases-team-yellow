@@ -38,8 +38,11 @@ public final class EmergencyReport {
 		return neo4j.fetchKnowAdresseCityZip(myId);
 	}
 	
-	public void updateZip(String zip) {
+	public boolean checkValidZip() {
+		return (neo4j.fetchKnowZip(myId).isEmpty());
+		
 	}
+	
 	public void updateCity() {
 		
 	}

@@ -51,17 +51,27 @@ public class MongoDBConnect implements AutoCloseable{
 		collection.insertOne(document);
 	}
 	
-	public void createEmergencyZone(String neo4jId, String lat, String lng) {
+	public void createEmergencyZone(String neo4jId, double[] lat, double[] lng, String type) {
 		MongoCollection<Document> collection = db.getCollection("EmergencyZone");
-		Document Cdocument = new Document();
-		Cdocument.put("Lat", lat);
-		Cdocument.put("Lng", lng);
+		List<Document> documentList = new LinkedList<Document>();
 		
-		Document document = new Document();
-		document.put("Center", Cdocument);
-		document.put("Radius", 10);
-		document.put("NeoId", neo4jId);
-		collection.insertOne(document);
+		int i = 0;
+		for(double a : lat) {
+			Document Cdocument = new Document();
+			Cdocument.put("Lat", a);
+			Cdocument.put("Lng", lng[i]);
+			
+			Document document = new Document();
+			document.put("Center", Cdocument);
+			document.put("Radius", 10);
+			document.put("MapId", type + "_" + i);
+			document.put("NeoId", neo4jId);
+			
+			documentList.add(document);
+			i++;
+		}
+		
+		collection.insertMany(documentList);
 	}
 	
 	public List<EmergencyZone> giveAllZones() {
@@ -72,7 +82,7 @@ public class MongoDBConnect implements AutoCloseable{
 			Document Cdocument = (Document) doc.get("Center");
 			
 			
-			String name = doc.get("NeoId").toString();
+			String name = doc.get("MapId").toString();
 			String lat = Cdocument.get("Lat").toString();
 			String lng = Cdocument.get("Lng").toString();
 			String rad = doc.get("Radius").toString();
