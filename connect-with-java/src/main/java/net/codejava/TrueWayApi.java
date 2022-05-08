@@ -77,7 +77,7 @@ public class TrueWayApi {
 			
 			i++;
 		}
-		mongoDB.createEmergencyZone(neo4jId, lat, lng, landmark);
+		mongoDB.createEmergencyZone(neo4jId, lat, lng, landmark, "#FF0000");
 	}
 	
 	private double[] contactAPI(String somePlace, String neo4jId) throws IOException, InterruptedException{

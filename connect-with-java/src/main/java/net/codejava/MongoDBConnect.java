@@ -56,7 +56,7 @@ public class MongoDBConnect implements AutoCloseable{
 		collection.insertOne(document);
 	}
 	
-	public void createEmergencyZone(String neo4jId, double[] lat, double[] lng, String type) {
+	public void createEmergencyZone(String neo4jId, double[] lat, double[] lng, String type, String color) {
 		MongoCollection<Document> collection = db.getCollection("EmergencyZone");
 		List<Document> documentList = new LinkedList<Document>();
 		
@@ -69,6 +69,7 @@ public class MongoDBConnect implements AutoCloseable{
 			document.put("category", type);
 			document.put("MapId", type + "_" + i);
 			document.put("NeoId", neo4jId);
+			document.put("Color", color);
 			
 			documentList.add(document);
 			i++;
@@ -91,8 +92,9 @@ public class MongoDBConnect implements AutoCloseable{
 			double lat = Cordi.get(1);
 			double lng = Cordi.get(0);
 			String rad = doc.get("Radius").toString();
+			String color = doc.get("Color").toString();
 			
-			emergencyZones.add(new EmergencyZone(name, lat+"", lng+"", rad));
+			emergencyZones.add(new EmergencyZone(name, lat+"", lng+"", rad, color));
 		}
 		
 		return (emergencyZones);
@@ -113,13 +115,13 @@ public class MongoDBConnect implements AutoCloseable{
 		return result;
 	}
 	
-	public double[] findNearest(String category, double lat, double lng) {
+	public ArrayList<ArrayList<Double>> findNearest(String category, double lat, double lng) {
 		MongoCollection<Document> collection = db.getCollection("EmergencyZone");
 		
 		Document document = new Document("$geoNear", 
 			    new Document("near", 
 			    	    new Document("type", "Point")
-			    	                .append("coordinates", Arrays.asList(8.66702d, 49.404222d)))
+			    	                .append("coordinates", Arrays.asList(lat, lng)))
 			    	            .append("distanceField", "dist.calculated")
 			    	            .append("maxDistance", 20L)
 			    	            .append("query", 
@@ -128,6 +130,8 @@ public class MongoDBConnect implements AutoCloseable{
 			    	            .append("spherical", true));
 		
 		AggregateIterable<Document> results = collection.aggregate(List.of(document));
+		
+		ArrayList<ArrayList<Double>> returnMid = new ArrayList<ArrayList<Double>>();
 		for(Document result: results) {
 			
 			Document doc = (Document) result.get("dist");
@@ -137,13 +141,30 @@ public class MongoDBConnect implements AutoCloseable{
 			Document CDPoint = (Document) doc.get("location");
 			ArrayList<Double> Cordi = (ArrayList<Double>) CDPoint.get("coordinates");
 			
-			System.out.println(distance);
-			System.out.println(Cordi.get(0));
-			System.out.println(Cordi.get(1));
+			Double midLat;
+			Double midLng;
+			
+			if(lat > Cordi.get(1)) {
+				midLat = (lat - Cordi.get(1));
+			}
+			else {
+				midLat = (Cordi.get(1) - lat);
+			}
+			if(lng > Cordi.get(0)) {
+				midLng = (lng - Cordi.get(0));
+			}
+			else {
+				midLng = (Cordi.get(0) - lng);
+			}
+			ArrayList<Double> theLat = new ArrayList<Double>();
+			theLat.add(midLat/2);
+			theLat.add(midLng/2);
+			
+			returnMid.add(theLat);
 		}
 		
 		
-		return null;
+		return returnMid;
 	}
 	
 	@Override
