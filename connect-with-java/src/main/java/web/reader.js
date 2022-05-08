@@ -76,7 +76,47 @@ center: { lat: 49.373204, lng: 8.68011 },
 population: 10,
 },
 Netto_9: {
+center: { lat: 49.419093, lng: 8.651829 },
+population: 10,
+},
+Netto_0: {
 center: { lat: 49.395501, lng: 8.643643 },
+population: 10,
+},
+Netto_1: {
+center: { lat: 49.395501, lng: 8.643643 },
+population: 10,
+},
+Netto_2: {
+center: { lat: 49.373204, lng: 8.68011 },
+population: 10,
+},
+Netto_3: {
+center: { lat: 49.419093, lng: 8.651829 },
+population: 10,
+},
+Netto_4: {
+center: { lat: 49.419093, lng: 8.651829 },
+population: 10,
+},
+Netto_5: {
+center: { lat: 49.419093, lng: 8.651829 },
+population: 10,
+},
+Netto_6: {
+center: { lat: 49.419093, lng: 8.651829 },
+population: 10,
+},
+Netto_7: {
+center: { lat: 49.395501, lng: 8.643643 },
+population: 10,
+},
+Netto_8: {
+center: { lat: 49.373204, lng: 8.68011 },
+population: 10,
+},
+Netto_9: {
+center: { lat: 49.419093, lng: 8.651829 },
 population: 10,
 },
 };

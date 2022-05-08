@@ -201,8 +201,15 @@ public final class FrontEnd {
 			for(String field : placePass) {
 				trueWayApi.makeTrueWayRequest(field, Location, emergencyTest.myId, emergencyTest.checkValidZip());
 			}
+			
+			mongoDB.findNearest("", 0.0, 0.0);
 		}
 		System.out.println(Location);
+		
+		for (ArrayList<Double> theList : mongoDB.giveCordinatesOfLoc("Aldi")) {
+			System.out.println("The test");
+			System.out.println(theList.get(0) + " " + theList.get(1));
+		}
 		
 		PassToMap passMap = new PassToMap(mongoDB);
 		passMap.makeData();
