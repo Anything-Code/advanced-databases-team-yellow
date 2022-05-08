@@ -1,22 +1,27 @@
-function calcDistanceFromOperatorToEmergency(operatorId: string): Promise<number> {
-    throw new Error('Function not implemented.');
-}
-
-function calcDistanceFromEmergencyToOperator(emergencyId: string): Promise<number> {
-    throw new Error('Function not implemented.');
-}
+import neo4j from 'neo4j-driver';
+import { API } from './api';
 
 (async () => {
-    console.log('\nStarted...\n');
+    const driver = neo4j.driver('bolt://localhost:11003', neo4j.auth.basic('neo4j', 'password'));
+    const session = driver.session({
+        database: 'neo4j',
+        defaultAccessMode: neo4j.session.WRITE,
+    });
+    console.log('\nConnected...\n');
 
-    const operatorId = '526bc011-284b-4666-9192-525fde4d1a37';
-    const emergencyId = 'f554c706-5016-40e2-94d0-94bc4d11507c';
+    const port = 3000;
+    const api = API.from(session);
 
-    const distanceFromOperator: number = await calcDistanceFromOperatorToEmergency(operatorId);
-    const distanceFromEmergency: number = await calcDistanceFromEmergencyToOperator(emergencyId);
+    api.listen(port, () => {
+        console.log(`Server started @http://localhost:${port}`);
+    });
 
-    console.log('\nDistance from operator: ' + distanceFromOperator + 'm' + '!\n');
-    console.log('\nDistance from emergency: ' + distanceFromEmergency + 'm' + '!\n');
+    // driver.close();
+    // session.close();
+    // console.log('\nConnections dropped!\n');
+
+    // console.log('\nDistance from operator: ' + distanceFromOperator + 'm' + '!\n');
+    // console.log('\nDistance from emergency: ' + distanceFromEmergency + 'm' + '!\n');
     // const mongoClient = await MongoClient.connect('mongodb://localhost:27017');
     // const redisClient = createClient();
     // redisClient.on('error', (err) => console.log('Redis Client Error', err));
