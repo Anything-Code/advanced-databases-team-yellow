@@ -45,23 +45,17 @@ pub fn read_kml(filename: &str) -> LineString<f64> {
     let kml_data = kml_reader.read().unwrap();
     let geom_coll: GeometryCollection<_> = quick_collection(kml_data).unwrap();
 
-    let without_duplicates = geom_coll
+    let without_duplicates_as_points = geom_coll
         .iter()
         .cloned()
         .collect::<Vec<_>>()
         .iter()
         .cloned()
         .enumerate()
-        .filter(|&(key, _)| key >= 1)
+        .filter(|&(key, _)| key >= 1 && key < geom_coll.len() - 1)
         .map(|item| item.1)
-        .collect::<Vec<_>>();
-
-    let only_points = without_duplicates
-        .iter()
-        .cloned()
-        .take(11)
         .map(|item| Point::try_from(item).unwrap())
         .collect::<Vec<_>>();
 
-    return LineString::from_iter(only_points.iter().cloned());
+    return LineString::from_iter(without_duplicates_as_points.iter().cloned());
 }

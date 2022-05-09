@@ -2,12 +2,13 @@ use crate::paths::{calc_current_coords, progress_percent, traveled_distance};
 use geo::{prelude::HaversineLength, LineString};
 use std::{
     ops::Sub,
-    sync::mpsc::{Sender, SyncSender},
+    sync::mpsc::SyncSender,
     thread::{self, JoinHandle},
     time::Instant,
 };
 
-pub struct PoliceCar {
+pub struct Car {
+    pub car_type: &'static str,
     pub nr: &'static str,
     pub progress: f64,
     pub traveled_distance: f64,
@@ -16,12 +17,13 @@ pub struct PoliceCar {
     pub coords: (f64, f64),
 }
 
-impl PoliceCar {
+impl Car {
     pub fn new(
+        car_type: &'static str,
         nr: &'static str,
         speed: f64, // In m/s
-        looping: bool,
-        tx: SyncSender<PoliceCar>,
+        infinite: bool,
+        tx: SyncSender<Car>,
         path: LineString<f64>,
     ) -> JoinHandle<()> {
         let handle = thread::spawn(move || {
@@ -30,16 +32,17 @@ impl PoliceCar {
 
             loop {
                 let time_diff_in_s = Instant::now().sub(init_time).as_secs_f64(); // init_time.elapsed....
-                let td = traveled_distance(speed, time_diff_in_s);
-                let progress = progress_percent(length, td);
+                let traveled_distance = traveled_distance(speed, time_diff_in_s);
+                let progress = progress_percent(length, traveled_distance);
                 let new_coords = calc_current_coords(&path, length, time_diff_in_s, speed);
 
                 match new_coords {
                     Ok(coords) => {
                         let payload = Self {
+                            car_type,
                             nr,
                             progress,
-                            traveled_distance: td,
+                            traveled_distance,
                             length,
                             time_diff_in_s,
                             coords,
@@ -49,7 +52,7 @@ impl PoliceCar {
                     }
                     Err(e) => {
                         println!("\n{:#?}", e);
-                        if looping {
+                        if infinite {
                             init_time = Instant::now();
                         } else {
                             break;
@@ -58,7 +61,7 @@ impl PoliceCar {
                 }
             }
 
-            if !looping {
+            if !infinite {
                 println!("\n1 lap done!");
             }
         });
