@@ -103,8 +103,10 @@ public class MongoDBConnect implements AutoCloseable{
 	public ArrayList<ArrayList<Double>> giveCordinatesOfLoc(String name) {
 		ArrayList<ArrayList<Double>> result = new ArrayList<ArrayList<Double>>();
 		
+		BasicDBObject fileds = new BasicDBObject("category", name);
+		
 		MongoCollection<Document> collection = db.getCollection("EmergencyZone");
-		for(Document doc : collection.find()) {
+		for(Document doc : collection.find(fileds)) {
 			Document CDPoint = (Document) doc.get("location");
 			ArrayList<Double> Cordi = (ArrayList<Double>) CDPoint.get("coordinates");
 			
@@ -121,11 +123,11 @@ public class MongoDBConnect implements AutoCloseable{
 		Document document = new Document("$geoNear", 
 			    new Document("near", 
 			    	    new Document("type", "Point")
-			    	                .append("coordinates", Arrays.asList(lat, lng)))
+			    	                .append("coordinates", Arrays.asList(lng, lat)))
 			    	            .append("distanceField", "dist.calculated")
-			    	            .append("maxDistance", 20L)
+			    	            .append("maxDistance", 1000L)//this is in meters
 			    	            .append("query", 
-			    	    new Document("category", "Aldi"))
+			    	    new Document("category", category))
 			    	            .append("includeLocs", "dist.location")
 			    	            .append("spherical", true));
 		
@@ -136,31 +138,30 @@ public class MongoDBConnect implements AutoCloseable{
 			
 			Document doc = (Document) result.get("dist");
 			
-			double distance = doc.getDouble("calculated");
-			
 			Document CDPoint = (Document) doc.get("location");
 			ArrayList<Double> Cordi = (ArrayList<Double>) CDPoint.get("coordinates");
 			
-			Double midLat;
-			Double midLng;
+			ArrayList<Double> theCordi = new ArrayList<Double>();
 			
+			System.out.println("First: " + Cordi.get(1));
 			if(lat > Cordi.get(1)) {
-				midLat = (lat - Cordi.get(1));
+				theCordi.add(Cordi.get(1) + (lat - Cordi.get(1))/2);
 			}
 			else {
-				midLat = (Cordi.get(1) - lat);
+				theCordi.add(lat + (Cordi.get(1) - lat)/2);
 			}
-			if(lng > Cordi.get(0)) {
-				midLng = (lng - Cordi.get(0));
-			}
-			else {
-				midLng = (Cordi.get(0) - lng);
-			}
-			ArrayList<Double> theLat = new ArrayList<Double>();
-			theLat.add(midLat/2);
-			theLat.add(midLng/2);
 			
-			returnMid.add(theLat);
+			System.out.println("Second: " + Cordi.get(0));
+			if(lng > Cordi.get(0)) {
+				theCordi.add(Cordi.get(0) + (lng - Cordi.get(0))/2);
+			}
+			else {
+				theCordi.add(lng + (Cordi.get(0) - lng)/2);
+			}
+			
+			System.out.println("=================================================");
+			System.out.println(lat + " new " + theCordi.get(0) + " " + lng + " new " + theCordi.get(1));
+			returnMid.add(theCordi);
 		}
 		
 		

@@ -210,8 +210,11 @@ public final class FrontEnd {
 		if(placePass.size() > 1) {
 			zoneIntersection = findLikelyLocation(1, mongoDB.giveCordinatesOfLoc(placePass.get(0)));
 			
+			int i = 0;
 			for(ArrayList<Double> location : zoneIntersection) {
-				mongoDB.createEmergencyZone("InterSection",new double[] { location.get(0)}, new double[] {location.get(1)}, "interSection", "#00FF00");
+				String passS = "InterSection" + i;
+				mongoDB.createEmergencyZone(passS ,new double[] { location.get(0)}, new double[] {location.get(1)}, passS, "#00FF00");
+				i++;
 				System.out.println("Found intersection " + location.get(0));
 			}
 		}
@@ -227,7 +230,8 @@ public final class FrontEnd {
 		ArrayList<ArrayList<Double>> result = new ArrayList<ArrayList<Double>>();
 		
 		for (ArrayList<Double> theList : listWithWork) {
-			result.addAll(mongoDB.findNearest(placePass.get(index), theList.get(0), theList.get(1))); 
+			System.out.println("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFf lat is " + theList.get(0));
+			result.addAll(mongoDB.findNearest(placePass.get(index), theList.get(1), theList.get(0))); 
 		}
 		result = removeDuplicates(result);
 		return result;
