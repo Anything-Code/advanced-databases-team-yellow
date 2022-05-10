@@ -20,49 +20,32 @@ fn main() {
     let heidelberg_bergheim = paths::read_kml("heidelberg-bergheim.kml");
     let heidelberg_neunheim = paths::read_kml("heidelberg-neunheim.kml");
 
-    let thread1 = Car::new(
-        "Police",
-        "BWL A 1",
-        1111.1,
-        true,
-        tx.clone(),
-        heidelberg_weststadt,
-    );
-    let thread2 = Car::new(
-        "Ambulance",
-        "BWL A 2",
-        1111.1,
-        true,
-        tx.clone(),
-        heidelberg_bergheim,
-    );
-    let thread3 = Car::new(
-        "Firetruck",
-        "BWL A 3",
-        1111.1,
-        true,
-        tx.clone(),
-        heidelberg_neunheim,
-    );
+    let police_car = Car::new("Police", "BWL A 1", 1111.1, heidelberg_weststadt.clone());
+    let ambulance = Car::new("Ambulance", "BWL A 2", 1111.1, heidelberg_bergheim.clone());
+    let firetruck = Car::new("Firetruck", "BWL A 3", 1111.1, heidelberg_neunheim.clone());
+
+    let t1 = police_car.drive(heidelberg_weststadt, true, tx.clone());
+    let t2 = ambulance.drive(heidelberg_bergheim, true, tx.clone());
+    let t3 = firetruck.drive(heidelberg_neunheim, true, tx.clone());
 
     // Mby impl trait for nicenesssss!!!
     drop(tx);
 
-    for payload in rx {
+    for car in rx {
         //
         // Regex to extract the data:
         // /(?'type'\w+) (?'license_plate'\(\w+ \w+ \w\)).*Lat: (?'Lat'\d+\.\d+), Lon: (?'Lon'\d*.\d*)gm/
         //
         let message = format!(
             "{} ({}) [{:#?}% ({:#?}m of {:#?}m) traveled in {:#?}s] Lat: {:#?}, Lon: {:#?}",
-            payload.car_type,
-            payload.nr,
-            payload.progress as u64,
-            payload.traveled_distance as u64,
-            payload.length as u64,
-            payload.time_diff_in_s as u64,
-            payload.coords.0,
-            payload.coords.1
+            car.car_type,
+            car.license_plate,
+            car.progress as u64,
+            car.traveled_distance as u64,
+            car.path_length as u64,
+            car.lap_clock as u64,
+            car.coords.0,
+            car.coords.1
         );
 
         println!("{}", message);
@@ -74,7 +57,7 @@ fn main() {
             .unwrap();
     }
 
-    thread1.join().unwrap();
-    thread2.join().unwrap();
-    thread3.join().unwrap();
+    t1.join().unwrap();
+    t2.join().unwrap();
+    t3.join().unwrap();
 }
