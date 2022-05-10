@@ -98,7 +98,7 @@ fn main() {
         }
     }
 
-    let (r_sender, r_receiver) = sync_channel::<Car>(1000);
+    // let (r_sender, r_receiver) = sync_channel::<Car>(1000);
 
     threads.into_iter().for_each(|t| t.join().unwrap());
 }
