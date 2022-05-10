@@ -3,13 +3,14 @@ mod connect_redis;
 mod paths;
 
 use car::Car;
+use redis::PubSubCommands;
 use std::{
     sync::{mpsc::sync_channel, Arc, Mutex},
     thread::JoinHandle,
 };
 
 fn main() {
-    let mut r_con = connect_redis::connect().unwrap();
+    let mut r_pub_con = connect_redis::connect().unwrap();
     let (car_sender, car_receiver) = sync_channel::<Car>(1000);
 
     let heidelberg_weststadt = paths::read_kml("heidelberg-weststadt.kml");
@@ -59,6 +60,14 @@ fn main() {
     // Mby impl trait for nicenesssss!!!
     drop(car_sender);
 
+    let _: () = r_pub_con
+        .subscribe("Emergencies", |msg| {
+            let payload: String = msg.get_payload().unwrap();
+            println!("channel '{}': {}", msg.get_channel_name(), payload);
+            return redis::ControlFlow::Continue;
+        })
+        .unwrap();
+
     for car in car_receiver {
         //
         // Regex to extract the data:
@@ -75,30 +84,27 @@ fn main() {
             car.coords.0,
             car.coords.1
         );
-
-        println!("{}", message);
+        // println!("{}", message);
 
         redis::cmd("PUBLISH")
             .arg("All")
             .arg(message.clone())
-            .query::<()>(&mut r_con)
+            .query::<()>(&mut r_pub_con)
             .unwrap();
         redis::cmd("PUBLISH")
             .arg(car.car_type)
             .arg(message.clone())
-            .query::<()>(&mut r_con)
+            .query::<()>(&mut r_pub_con)
             .unwrap();
         match car.channel {
             Some(emergency) => redis::cmd("PUBLISH")
                 .arg(emergency.uuid)
                 .arg(message)
-                .query::<()>(&mut r_con)
+                .query::<()>(&mut r_pub_con)
                 .unwrap(),
             None => (),
         }
     }
-
-    // let (r_sender, r_receiver) = sync_channel::<Car>(1000);
 
     threads.into_iter().for_each(|t| t.join().unwrap());
 }
