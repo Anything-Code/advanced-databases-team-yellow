@@ -222,7 +222,7 @@ public final class FrontEnd {
 		PassToMap passMap = new PassToMap(mongoDB);
 		passMap.makeData();
 		
-		String url_open ="file:///C:/Users/Emil/eclipse-workspace/ConnectDBUsingJava/src/main/java/web/map.html";
+		String url_open ="http://localhost:8080/";
 		java.awt.Desktop.getDesktop().browse(java.net.URI.create(url_open));
 	}
 	
