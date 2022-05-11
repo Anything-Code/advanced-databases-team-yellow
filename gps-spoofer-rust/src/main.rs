@@ -1,15 +1,17 @@
 mod car;
 mod connect_redis;
 mod paths;
+mod pub_sub;
 
 use car::Car;
-use redis::PubSubCommands;
 use std::{
+    error::Error,
     sync::{mpsc::sync_channel, Arc, Mutex},
     thread::JoinHandle,
 };
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
     let mut r_pub_con = connect_redis::connect().unwrap();
     let (car_sender, car_receiver) = sync_channel::<Car>(1000);
 
@@ -48,25 +50,19 @@ fn main() {
 
     let threads = cars
         .into_iter()
-        .enumerate()
-        .map(|(i, car)| match i {
-            0 => car.drive(car_sender.clone()),
-            1 => car.drive(car_sender.clone()),
-            2 => car.drive(car_sender.clone()),
-            _ => car.drive(car_sender.clone()),
-        })
+        .map(|car| car.drive(car_sender.clone()))
         .collect::<Vec<JoinHandle<()>>>();
 
     // Mby impl trait for nicenesssss!!!
     drop(car_sender);
 
-    let _: () = r_pub_con
-        .subscribe("Emergencies", |msg| {
-            let payload: String = msg.get_payload().unwrap();
-            println!("channel '{}': {}", msg.get_channel_name(), payload);
-            return redis::ControlFlow::Continue;
-        })
-        .unwrap();
+    if let Err(error) = pub_sub::subscribe(String::from("Emergencies"), Arc::new(Mutex::new(cars)))
+    {
+        println!("{:?}", error);
+        panic!("{:?}", error);
+    } else {
+        println!("Connected to sub-queue!")
+    }
 
     for car in car_receiver {
         //
@@ -107,4 +103,6 @@ fn main() {
     }
 
     threads.into_iter().for_each(|t| t.join().unwrap());
+
+    return Ok(());
 }

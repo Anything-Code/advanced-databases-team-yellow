@@ -93,7 +93,7 @@ impl Car {
                         car_sender.send(self.clone()).unwrap();
                     }
                     Err(e) => {
-                        println!("\n{:#?}", e);
+                        // println!("\n{}", e);
                         if self.infinite {
                             init_clock = Instant::now();
                         } else {
@@ -104,7 +104,7 @@ impl Car {
             }
 
             if !self.infinite {
-                println!("\n1 lap done!");
+                println!("\n{}: Destination reached", self.license_plate);
             }
         });
 
