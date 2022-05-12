@@ -117,7 +117,7 @@ public class MongoDBConnect implements AutoCloseable{
 		return result;
 	}
 	
-	public ArrayList<ArrayList<Double>> findNearest(String category, double lat, double lng) {
+	public ArrayList<ArrayList<Double>> findNearest(String category, double lat, double lng, long maxDis) {
 		MongoCollection<Document> collection = db.getCollection("EmergencyZone");
 		
 		Document document = new Document("$geoNear", 
@@ -125,7 +125,7 @@ public class MongoDBConnect implements AutoCloseable{
 			    	    new Document("type", "Point")
 			    	                .append("coordinates", Arrays.asList(lng, lat)))
 			    	            .append("distanceField", "dist.calculated")
-			    	            .append("maxDistance", 1000L)//this is in meters
+			    	            .append("maxDistance", maxDis)//this is in meters
 			    	            .append("query", 
 			    	    new Document("category", category))
 			    	            .append("includeLocs", "dist.location")

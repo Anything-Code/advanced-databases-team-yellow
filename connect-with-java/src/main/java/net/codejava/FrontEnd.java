@@ -6,6 +6,7 @@ import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Locale;
@@ -181,9 +182,39 @@ public final class FrontEnd {
 		
 	}
 	
+	public String[] splitStringByComma(String input) {
+		char[] WorkInput = input.toCharArray();
+		List<String> retrunString = new ArrayList<String>();
+		String passer = "";
+		
+		for(char c : WorkInput) {
+			if(c == ',') {
+				retrunString.add(passer);
+				passer = "";
+			}
+			else{
+				passer += c;
+			}
+		}
+		retrunString.add(passer);
+		
+		String[] finalString = new String[retrunString.size()];
+		
+		for(int i = 0; i < retrunString.size(); i++){
+			finalString[i] = retrunString.get(i);
+		}
+		
+		return finalString;
+	}
+	
 	private void addNearLocation(ActionEvent e) {
-		placePass.add(nearField.getText());
-		nearPlaces.addElement(nearField.getText());
+		String[] addAll = splitStringByComma(nearField.getText());
+		
+		for(String s : addAll) {
+			placePass.add(s);
+			nearPlaces.addElement(s);
+		}
+
 	}
 	
 	private void searchAction(ActionEvent e) throws Exception {
@@ -194,6 +225,13 @@ public final class FrontEnd {
 			System.out.println("Went here");
 			Location = neo4jClient.fetchGPSfromKnowAdresse(emergencyTest.myId);
 			Location = Location.replace("\"", "");
+			
+			String[] gpsCordi = new String[2];
+			gpsCordi = splitStringByComma(Location);
+			
+			System.out.println(gpsCordi[0] + " " + gpsCordi[1]);
+			
+			mongoDB.createEmergencyZone(emergencyTest.myId ,new double[] { Double.parseDouble(gpsCordi[0]) }, new double[] { Double.parseDouble(gpsCordi[1]) }, emergencyTest.myId, "#00FF00");
 		}
 		else {
 			Location = emergencyTest.getCityAndZip().replace("\"", "");
@@ -203,38 +241,45 @@ public final class FrontEnd {
 			for(String field : placePass) {
 				trueWayApi.makeTrueWayRequest(field, Location, emergencyTest.myId, emergencyTest.checkValidZip());
 			}
-		}
-		
-		ArrayList<ArrayList<Double>> zoneIntersection = new ArrayList<ArrayList<Double>>();
-		
-		if(placePass.size() > 1) {
-			zoneIntersection = findLikelyLocation(1, mongoDB.giveCordinatesOfLoc(placePass.get(0)));
 			
-			int i = 0;
-			for(ArrayList<Double> location : zoneIntersection) {
-				String passS = "InterSection" + i;
-				mongoDB.createEmergencyZone(passS ,new double[] { location.get(0)}, new double[] {location.get(1)}, passS, "#00FF00");
-				i++;
-				System.out.println("Found intersection " + location.get(0));
+			
+			ArrayList<ArrayList<Double>> zoneIntersection = new ArrayList<ArrayList<Double>>();
+			
+			if(placePass.size() > 1) {
+				zoneIntersection = findLikelyLocation(1, mongoDB.giveCordinatesOfLoc(placePass.get(0)), 1000);
+				
+				int i = 0;
+				for(ArrayList<Double> location : zoneIntersection) {
+					String passS = "Intersection" + i;
+					mongoDB.createEmergencyZone(emergencyTest.myId ,new double[] { location.get(0)}, new double[] {location.get(1)}, passS, "#00FF00");
+					i++;
+					System.out.println("Found intersection " + location.get(0));
+				}
 			}
 		}
 		
-		PassToMap passMap = new PassToMap(mongoDB);
-		passMap.makeData();
+	
+		
+		//PassToMap passMap = new PassToMap(mongoDB);
+		//passMap.makeData();
 		
 		String url_open ="http://localhost:8080/";
 		java.awt.Desktop.getDesktop().browse(java.net.URI.create(url_open));
 	}
 	
-	private ArrayList<ArrayList<Double>> findLikelyLocation(int index, ArrayList<ArrayList<Double>> listWithWork) {
+	private ArrayList<ArrayList<Double>> findLikelyLocation(int index, ArrayList<ArrayList<Double>> listWithWork, long distance) {
 		ArrayList<ArrayList<Double>> result = new ArrayList<ArrayList<Double>>();
 		
 		for (ArrayList<Double> theList : listWithWork) {
-			System.out.println("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFf lat is " + theList.get(0));
-			result.addAll(mongoDB.findNearest(placePass.get(index), theList.get(1), theList.get(0))); 
+			result.addAll(mongoDB.findNearest(placePass.get(index), theList.get(1), theList.get(0), distance)); 
 		}
 		result = removeDuplicates(result);
-		return result;
+		if(result.isEmpty()) {
+			 return findLikelyLocation(index, listWithWork, distance+500);
+		}
+		else {
+			return result;
+		}
 	}
 	
     private static <T> ArrayList<T> removeDuplicates(ArrayList<T> list)

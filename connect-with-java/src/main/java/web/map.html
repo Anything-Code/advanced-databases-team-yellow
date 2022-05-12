@@ -21,6 +21,13 @@ body {
 </style>
 
   <script>
+
+    async function getSpecifZones(theID){
+      var returnData = fetch('http://localhost:8080/specificID?theID='+theID).then(data =>{return data.json()});
+      
+      return returnData;
+    }
+
     async function getEZones(){
       var returnData = fetch("http://localhost:8080/url").then(data =>{return data.json()});
       console.log("let go dud u");
@@ -52,10 +59,44 @@ const map = new google.maps.Map(document.getElementById("map"), {
 // Construct the circle for each value in citymap.
 // Note: We scale the area of the circle based on the population.
 
+
 for(const citymap in response){
   const passer = response[citymap];
   for (const city in passer) {
+
+
+    const marker = new google.maps.Marker({
+    position: passer[city].center,
+    map,
+    title: passer[city].EId,
+    optimized: false,
+  });
+
+  const infoWindow = new google.maps.InfoWindow();
+
   // Add the circle for this city to the map.
+  if(showRed){
+    responseRed = await getSpecifZones(theID);
+
+    for(const citymapRed in responseRed){
+      const passerRed = responseRed[citymapRed];
+      for (const cityRed in passerRed) {
+        const cityCircle = new google.maps.Circle({
+    strokeColor: "#FF0000",
+    strokeOpacity: 0.8,
+    strokeWeight: 2,
+    fillColor: passerRed[cityRed].color,
+    fillOpacity: 0.35,
+    map,
+    center: passerRed[cityRed].center,
+    radius: Math.sqrt(passerRed[cityRed].population) * 100,
+  });
+    }
+  }
+
+    showRed = false;
+  }
+
   const cityCircle = new google.maps.Circle({
     strokeColor: "#FF0000",
     strokeOpacity: 0.8,
@@ -66,9 +107,25 @@ for(const citymap in response){
     center: passer[city].center,
     radius: Math.sqrt(passer[city].population) * 100,
   });
+  
+
+
+
+  marker.addListener("click", () => {
+      infoWindow.close();
+      infoWindow.setContent(marker.getTitle());
+      infoWindow.open(marker.getMap(), marker);
+
+      showRed = true;
+      theID = passer[city].EId;
+      initMap();
+    });
 }
 }
 }
+
+var theID;
+var showRed = false;
 
 window.initMap = initMap;
 

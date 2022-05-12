@@ -53,7 +53,7 @@ public final class Neo4jDBConnect implements AutoCloseable{
 		return (addNoteGetId(insturctions, params));
 	}
 	
-	public String fetchGPSfromKnowAdresse(String id) {//IK IK copy paste but Readability tho
+	public String fetchGPSfromKnowAdresse(String id) {
 		Map<String, Object> params = Map.of("NId", Integer.parseInt(id));
 		
 		String insturctions = "MATCH (nm:Emergency) "
