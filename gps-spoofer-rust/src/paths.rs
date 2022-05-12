@@ -22,7 +22,7 @@ pub fn progress_percent(total: f64, traveled_distance: f64) -> f64 {
 }
 
 pub fn calc_current_coords(
-    path: Arc<Mutex<geo::LineString<f64>>>,
+    path: geo::LineString<f64>,
     length: f64,
     time_passed: f64,
     speed: f64,
@@ -33,7 +33,7 @@ pub fn calc_current_coords(
         return Err("Ratio cannot be greater than 1!");
     }
 
-    let coords = path.lock().unwrap().line_interpolate_point(ratio).unwrap();
+    let coords = path.line_interpolate_point(ratio).unwrap();
 
     return Ok((coords.y(), coords.x()));
 }

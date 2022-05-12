@@ -1,7 +1,8 @@
 use crate::paths::{calc_current_coords, progress_percent, traveled_distance};
+use either::Either;
 use geo::{coord, prelude::HaversineLength, Coordinate, LineString};
 use std::{
-    sync::{mpsc::SyncSender, Arc, Mutex},
+    sync::mpsc::SyncSender,
     thread::{self, JoinHandle},
     time::Instant,
 };
@@ -14,10 +15,9 @@ pub struct Emergency {
     lon: f64,
 }
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Car {
     pub car_type: &'static str,
-    pub path: Arc<Mutex<LineString<f64>>>,
     pub license_plate: &'static str,
     pub speed: f64, // In m/s
     pub infinite: bool,
@@ -37,19 +37,17 @@ impl Car {
         car_type: &'static str,
         license_plate: &'static str,
         speed: f64, // In m/s
-        path: Arc<Mutex<LineString<f64>>>,
+        path: LineString<f64>,
     ) -> Car {
-        let path_length = path.lock().unwrap().haversine_length().round();
-        let path_as_coords: Vec<Coordinate<f64>> =
-            path.lock().unwrap().clone().into_iter().collect();
+        let path_length = path.haversine_length().round();
+        let path_as_coords: Vec<Coordinate<f64>> = path.into_iter().collect();
         let first_coord = path_as_coords.first().unwrap();
 
         return Self {
             car_type,
-            path,
             license_plate,
             speed,
-            infinite: true,
+            infinite: false,
             driving_since: 0.0,
             progress: 0.0,
             traveled_distance: 0.0,
@@ -62,9 +60,13 @@ impl Car {
         };
     }
 
-    pub fn drive(mut self, car_sender: SyncSender<Self>) -> JoinHandle<()> {
+    pub fn drive(
+        mut self,
+        path: LineString<f64>,
+        car_sender: SyncSender<Either<Self, String>>,
+    ) -> JoinHandle<()> {
         let handle = thread::spawn(move || {
-            let length = self.path.lock().unwrap().haversine_length().round();
+            let length = path.haversine_length().round();
             let init_full_time = Instant::now();
             let mut init_clock = Instant::now();
 
@@ -74,7 +76,7 @@ impl Car {
                     break;
                 }
                 if self.stopped {
-                    car_sender.send(self.clone()).unwrap();
+                    car_sender.send(either::Left(self.clone())).unwrap();
                     continue;
                 }
 
@@ -83,14 +85,14 @@ impl Car {
                 self.progress = progress_percent(length, self.traveled_distance);
 
                 let speed = self.speed;
-                let path = self.path.clone();
+                let path = path.clone();
                 let new_coords = calc_current_coords(path, length, self.lap_clock, speed);
 
                 match new_coords {
                     Ok(coords) => {
                         self.coords = coords;
 
-                        car_sender.send(self.clone()).unwrap();
+                        car_sender.send(either::Left(self.clone())).unwrap();
                     }
                     Err(e) => {
                         // println!("\n{}", e);
@@ -115,7 +117,7 @@ impl Car {
         self.stop_driving = true;
     }
 
-    pub fn join_channel(mut self, emergency: Emergency) {
+    pub fn join_channel(mut self, emergency: Emergency) -> LineString<f64> {
         self.channel = Some(emergency);
         self.infinite = false;
 
@@ -124,7 +126,7 @@ impl Car {
             coord! {x:emergency.lat, y: emergency.lon},
         ]);
 
-        self.path = Arc::new(Mutex::new(path));
+        return path;
     }
 
     pub fn leave_channel(mut self) {

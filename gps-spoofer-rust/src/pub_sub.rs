@@ -1,13 +1,14 @@
-use std::{
-    error::Error,
-    sync::{Arc, Mutex},
-};
+use std::{error::Error, sync::mpsc::SyncSender};
 
+use either::Either;
 use redis::{ControlFlow, PubSubCommands};
 
 use crate::{car::Car, connect_redis};
 
-pub fn subscribe(channel: String, cars: Arc<Mutex<Vec<Car>>>) -> Result<(), Box<dyn Error>> {
+pub fn subscribe(
+    channel: String,
+    car_sender: SyncSender<Either<Car, String>>,
+) -> Result<(), Box<dyn Error>> {
     let _ = tokio::spawn(async move {
         let mut conn = connect_redis::connect().unwrap();
 
@@ -15,7 +16,7 @@ pub fn subscribe(channel: String, cars: Arc<Mutex<Vec<Car>>>) -> Result<(), Box<
             .subscribe(&[channel], |msg| {
                 let received: String = msg.get_payload().unwrap();
 
-                println!("\n{}", received);
+                car_sender.send(Either::Right(received)).unwrap();
 
                 return ControlFlow::Continue;
             })
