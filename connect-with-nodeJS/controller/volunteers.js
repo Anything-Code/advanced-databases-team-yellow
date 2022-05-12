@@ -1,5 +1,5 @@
 const Volunteer = require('../models/Volunteer');
-
+const geocoder = require('../utils/geocoder');
 // @desc  Get all volunteers
 // @route GET /api/v1/volunteers
 // @access Public
@@ -32,6 +32,6 @@ exports.addVolunteers = async(req, res, next)=>{
     } catch (err) {
         console.error(err);
         
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error2' });
     }
 }

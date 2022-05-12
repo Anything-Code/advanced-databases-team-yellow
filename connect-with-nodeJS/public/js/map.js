@@ -3,7 +3,7 @@ const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/streets-v11',
     zoom: 9,
-    center: [8.45381, 49.63909]
+    center: [8.68165,49.37621]
 });
 
 // Fetch volunteers from API
@@ -21,17 +21,8 @@ async function getVolunteers(){
                     },
             'properties':{
                         'volunteerId': volunteer.volunteerId,
-                        'icon':'shop'//! iconu degistir
+                        'icon':'rocket'//! iconu degistir
                     }
-            // type:'Feature',
-            //         geometry:{
-            //             type:'Point',
-            //             coordinates: [volunteer.location.coordinates[0],volunteer.location.coordinates[1]]
-            //         },
-            //         properties: {
-            //             volunteerId: volunteer.volunteerId,
-            //             icon:'person'
-            //         }
         }
     });
 
