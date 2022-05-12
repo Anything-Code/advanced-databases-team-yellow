@@ -57,7 +57,7 @@ const map = new google.maps.Map(document.getElementById("map"), {
 });
 
 // Construct the circle for each value in citymap.
-// Note: We scale the area of the circle based on the population.
+// Note: We scale the area of the circle based on the radius.
 
 
 for(const citymap in response){
@@ -89,7 +89,7 @@ for(const citymap in response){
     fillOpacity: 0.35,
     map,
     center: passerRed[cityRed].center,
-    radius: Math.sqrt(passerRed[cityRed].population) * 100,
+    radius: Math.sqrt(passerRed[cityRed].radius) * 100,
   });
     }
   }
@@ -105,7 +105,7 @@ for(const citymap in response){
     fillOpacity: 0.35,
     map,
     center: passer[city].center,
-    radius: Math.sqrt(passer[city].population) * 100,
+    radius: Math.sqrt(passer[city].radius) * 100,
   });
   
 

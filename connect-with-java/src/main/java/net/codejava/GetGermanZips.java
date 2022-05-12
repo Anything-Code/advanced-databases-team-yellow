@@ -31,7 +31,7 @@ public class GetGermanZips {
 	        
 	        
 	        city.toLowerCase();
-	        System.out.println("REEEEEEEEEEEEEEEEE" + city);
+	        
 	        char[] cityTest = city.toCharArray();
 	        while ((line = in.readLine()) != null) {
 	        	line.toLowerCase();

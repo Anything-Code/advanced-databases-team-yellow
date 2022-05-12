@@ -246,7 +246,7 @@ public final class FrontEnd {
 			ArrayList<ArrayList<Double>> zoneIntersection = new ArrayList<ArrayList<Double>>();
 			
 			if(placePass.size() > 1) {
-				zoneIntersection = findLikelyLocation(1, mongoDB.giveCordinatesOfLoc(placePass.get(0)), 1000);
+				zoneIntersection = iterateLandmarks(mongoDB.giveCordinatesOfLoc(placePass.get(0)), 1);
 				
 				int i = 0;
 				for(ArrayList<Double> location : zoneIntersection) {
@@ -265,6 +265,14 @@ public final class FrontEnd {
 		
 		String url_open ="http://localhost:8080/";
 		java.awt.Desktop.getDesktop().browse(java.net.URI.create(url_open));
+	}
+	
+	private ArrayList<ArrayList<Double>> iterateLandmarks(ArrayList<ArrayList<Double>> zoneIntersection, int index){
+
+		for(int i = index; i < placePass.size(); i++) {
+			zoneIntersection = findLikelyLocation(i, mongoDB.giveCordinatesOfLoc(placePass.get(i-1)), 1000);
+		}
+		return zoneIntersection;
 	}
 	
 	private ArrayList<ArrayList<Double>> findLikelyLocation(int index, ArrayList<ArrayList<Double>> listWithWork, long distance) {

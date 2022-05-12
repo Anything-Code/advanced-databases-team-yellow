@@ -47,7 +47,7 @@ async function getMongoZones(){
         const zone ={
             [response[i].MapId] : {
                 center: { lat: response[i].location.coordinates[1], lng: response[i].location.coordinates[0] },
-                population: response[i].Radius,
+                radius: response[i].Radius,
                 color: response[i].Color,
                 EId : response[i].NeoId
                 },};
@@ -78,7 +78,7 @@ async function getMongoZonesSpecific(id){
         const zone ={
             [response[i].MapId] : {
                 center: { lat: response[i].location.coordinates[1], lng: response[i].location.coordinates[0] },
-                population: response[i].Radius,
+                radius: response[i].Radius,
                 color: response[i].Color,
                 EId : response[i].NeoId
                 },};
