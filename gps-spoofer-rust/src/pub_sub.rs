@@ -1,27 +1,36 @@
-use std::{error::Error, sync::mpsc::SyncSender};
+use std::error::Error;
 
 use either::Either;
-use redis::{ControlFlow, PubSubCommands};
+use tokio::{sync::mpsc::Sender, task::JoinHandle};
 
 use crate::{car::Car, connect_redis};
 
-pub fn subscribe(
+pub async fn subscribe(
     channel: String,
-    car_sender: SyncSender<Either<Car, String>>,
-) -> Result<(), Box<dyn Error>> {
-    let _ = tokio::spawn(async move {
+    tx: Sender<Either<Car, String>>,
+) -> Result<JoinHandle<()>, Box<dyn Error>> {
+    let handle = tokio::spawn(async move {
         let mut conn = connect_redis::connect().unwrap();
+        let mut ps = conn.as_pubsub();
 
-        let _: () = conn
-            .subscribe(&[channel], |msg| {
-                let received: String = msg.get_payload().unwrap();
+        ps.subscribe(channel).unwrap();
 
-                car_sender.send(Either::Right(received)).unwrap();
-
-                return ControlFlow::Continue;
-            })
-            .unwrap();
+        loop {
+            let msg = ps.get_message().unwrap();
+            let payload: String = msg.get_payload().unwrap();
+            // println!("channel '{}': {}", msg.get_channel_name(), payload);
+            tx.send(Either::Right(payload)).await.unwrap();
+        }
     });
 
-    Ok(())
+    Ok(handle)
+    // let _: () = conn
+    //     .subscribe(&[channel], |msg| {
+    //         let received: String = msg.get_payload().unwrap();
+
+    //         tx.send(Either::Right(received)).await;
+
+    //         return ControlFlow::Continue;
+    //     })
+    //     .unwrap();
 }
