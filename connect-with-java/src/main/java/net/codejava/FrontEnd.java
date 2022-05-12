@@ -269,10 +269,14 @@ public final class FrontEnd {
 	
 	private ArrayList<ArrayList<Double>> iterateLandmarks(ArrayList<ArrayList<Double>> zoneIntersection, int index){
 
-		for(int i = index; i < placePass.size(); i++) {
-			zoneIntersection = findLikelyLocation(i, mongoDB.giveCordinatesOfLoc(placePass.get(i-1)), 1000);
+		zoneIntersection = findLikelyLocation(index, mongoDB.giveCordinatesOfLoc(placePass.get(index-1)), 1000);
+		
+		if(index+1 == placePass.size()) {
+			return zoneIntersection;
 		}
-		return zoneIntersection;
+		else {
+			return iterateLandmarks(zoneIntersection, index+1);
+		}
 	}
 	
 	private ArrayList<ArrayList<Double>> findLikelyLocation(int index, ArrayList<ArrayList<Double>> listWithWork, long distance) {
