@@ -42,7 +42,7 @@ async function findVolunteer(e){
     var html = '';
     for(var vol of volunteers)
     {
-        html+= 'Distance: ' + vol.Distance + ', Coord: [' + vol.coordinates[0] + '-' + vol.coordinates[1] + ']<br>';
+        html+= vol.volunteerId+ '-> Distance: ' + vol.Distance + ', Coordinate: [' + vol.coordinates[0] + '-' + vol.coordinates[1] + ']<br>';
     }
     parent.innerHTML = html;
 }
@@ -53,7 +53,10 @@ async function getVolunteers(){
 
     // console.log(data);
     return data.data.map(volunteer =>{
-        return {'coordinates': [volunteer.location.coordinates[0], volunteer.location.coordinates[1]]}
+        return {
+        'coordinates': [volunteer.location.coordinates[0], volunteer.location.coordinates[1]],
+        'volunteerId': volunteer.volunteerId
+    }
     });
 
     //findVolunteer();
