@@ -6,8 +6,10 @@ import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Locale;
+import java.util.Set;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -202,14 +204,52 @@ public final class FrontEnd {
 				trueWayApi.makeTrueWayRequest(field, Location, emergencyTest.myId, emergencyTest.checkValidZip());
 			}
 		}
-		System.out.println(Location);
+		
+		ArrayList<ArrayList<Double>> zoneIntersection = new ArrayList<ArrayList<Double>>();
+		
+		if(placePass.size() > 1) {
+			zoneIntersection = findLikelyLocation(1, mongoDB.giveCordinatesOfLoc(placePass.get(0)));
+			
+			int i = 0;
+			for(ArrayList<Double> location : zoneIntersection) {
+				String passS = "InterSection" + i;
+				mongoDB.createEmergencyZone(passS ,new double[] { location.get(0)}, new double[] {location.get(1)}, passS, "#00FF00");
+				i++;
+				System.out.println("Found intersection " + location.get(0));
+			}
+		}
 		
 		PassToMap passMap = new PassToMap(mongoDB);
 		passMap.makeData();
 		
-		String url_open ="file:///C:/Users/Emil/eclipse-workspace/ConnectDBUsingJava/src/main/java/web/map.html";
+		String url_open ="http://localhost:8080/";
 		java.awt.Desktop.getDesktop().browse(java.net.URI.create(url_open));
 	}
+	
+	private ArrayList<ArrayList<Double>> findLikelyLocation(int index, ArrayList<ArrayList<Double>> listWithWork) {
+		ArrayList<ArrayList<Double>> result = new ArrayList<ArrayList<Double>>();
+		
+		for (ArrayList<Double> theList : listWithWork) {
+			System.out.println("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFf lat is " + theList.get(0));
+			result.addAll(mongoDB.findNearest(placePass.get(index), theList.get(1), theList.get(0))); 
+		}
+		result = removeDuplicates(result);
+		return result;
+	}
+	
+    private static <T> ArrayList<T> removeDuplicates(ArrayList<T> list)
+    {
+  
+        Set<T> set = new LinkedHashSet<>();
+  
+        set.addAll(list);
+  
+        list.clear();
+  
+        list.addAll(set);
+ 
+        return list;
+    }
 	
 	private JLabel makeText(int y, String text, JLabel genLabel) {
         genLabel = new JLabel(text);

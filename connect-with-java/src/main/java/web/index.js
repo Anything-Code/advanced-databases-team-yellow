@@ -15,7 +15,7 @@ function initMap() {
       strokeColor: "#FF0000",
       strokeOpacity: 0.8,
       strokeWeight: 2,
-      fillColor: "#FF0000",
+      fillColor: citymap[city].color,
       fillOpacity: 0.35,
       map,
       center: citymap[city].center,

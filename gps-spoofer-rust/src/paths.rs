@@ -2,7 +2,10 @@ use geo::{
     algorithm::line_interpolate_point::LineInterpolatePoint, GeometryCollection, LineString, Point,
 };
 use kml::{quick_collection, KmlReader};
-use std::path::Path;
+use std::{
+    path::Path,
+    sync::{Arc, Mutex, MutexGuard},
+};
 
 pub fn traveled_distance(speed: f64, time_passed: f64) -> f64 {
     return speed * time_passed;
@@ -19,7 +22,7 @@ pub fn progress_percent(total: f64, traveled_distance: f64) -> f64 {
 }
 
 pub fn calc_current_coords(
-    path: &LineString<f64>,
+    path: Arc<Mutex<geo::LineString<f64>>>,
     length: f64,
     time_passed: f64,
     speed: f64,
@@ -30,7 +33,7 @@ pub fn calc_current_coords(
         return Err("Ratio cannot be greater than 1!");
     }
 
-    let coords = path.line_interpolate_point(ratio).unwrap();
+    let coords = path.lock().unwrap().line_interpolate_point(ratio).unwrap();
 
     return Ok((coords.y(), coords.x()));
 }
@@ -45,23 +48,17 @@ pub fn read_kml(filename: &str) -> LineString<f64> {
     let kml_data = kml_reader.read().unwrap();
     let geom_coll: GeometryCollection<_> = quick_collection(kml_data).unwrap();
 
-    let without_duplicates = geom_coll
+    let without_duplicates_as_points = geom_coll
         .iter()
         .cloned()
         .collect::<Vec<_>>()
         .iter()
         .cloned()
         .enumerate()
-        .filter(|&(key, _)| key >= 1)
+        .filter(|&(key, _)| key >= 1 && key < geom_coll.len() - 1)
         .map(|item| item.1)
-        .collect::<Vec<_>>();
-
-    let only_points = without_duplicates
-        .iter()
-        .cloned()
-        .take(11)
         .map(|item| Point::try_from(item).unwrap())
         .collect::<Vec<_>>();
 
-    return LineString::from_iter(only_points.iter().cloned());
+    return LineString::from_iter(without_duplicates_as_points.iter().cloned());
 }

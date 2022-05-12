@@ -21,7 +21,7 @@ public class PassToMap {
 		  String content = "const citymap = {\r\n";
 		  
 		  for(EmergencyZone zone : emergencyZones) {
-			  content += makeLocationBlock(zone.lat, zone.lng, zone.radius, zone.name);  
+			  content += makeLocationBlock(zone.lat, zone.lng, zone.radius, zone.name, zone.color);  
 		  }
 		  
 		  content += "};";
@@ -38,11 +38,12 @@ public class PassToMap {
 		      }
 		  }
 	  
-	  private String makeLocationBlock(String lat, String lng, String radius, String name) {
+	  private String makeLocationBlock(String lat, String lng, String radius, String name, String color) {
 		  String toReturn = "";
 		  toReturn += name + ": {\r\n";
 		  toReturn += "center: { lat: " + lat + ", lng: " + lng + " },\r\n";
 		  toReturn += "population: " + radius + ",\r\n";
+		  toReturn += "color: \"" + color + "\",\r\n";
 		  toReturn += "},\r\n";
 		  
 		  return toReturn;

@@ -1,58 +1,108 @@
-// mod connect_mongodb;
-// mod connect_neo4j;
+mod car;
 mod connect_redis;
-mod operators;
 mod paths;
+mod pub_sub;
 
-use operators::PoliceCar;
-use std::sync::mpsc;
+use car::Car;
+use std::{
+    error::Error,
+    sync::{mpsc::sync_channel, Arc, Mutex},
+    thread::JoinHandle,
+};
 
-// #[tokio::main]
-fn main() {
-    // println!("Starting...\n");
-    // connect_mongodb::test().await?;
-    // connect_neo4j::test().await;
-    // connect_redis::test()?;
-    let mut r_con = connect_redis::connect().unwrap();
-    let (tx, rx) = mpsc::sync_channel::<PoliceCar>(1000);
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let mut r_pub_con = connect_redis::connect().unwrap();
+    let (car_sender, car_receiver) = sync_channel::<Car>(1000);
 
     let heidelberg_weststadt = paths::read_kml("heidelberg-weststadt.kml");
     let heidelberg_bergheim = paths::read_kml("heidelberg-bergheim.kml");
     let heidelberg_neunheim = paths::read_kml("heidelberg-neunheim.kml");
 
-    let thread1 = PoliceCar::new("BWL A 1", 1111.1, false, tx.clone(), heidelberg_weststadt);
-    let thread2 = PoliceCar::new("BWL A 2", 1111.1, false, tx.clone(), heidelberg_bergheim);
-    let thread3 = PoliceCar::new("BWL A 3", 1111.1, false, tx.clone(), heidelberg_neunheim);
+    let cars = (0..3)
+        .map(|i| match i {
+            0 => Car::new(
+                "Police",
+                "BWL A 1",
+                1111.1,
+                Arc::new(Mutex::new(heidelberg_weststadt.clone())),
+            ),
+            1 => Car::new(
+                "Ambulance",
+                "BWL A 1",
+                1111.1,
+                Arc::new(Mutex::new(heidelberg_bergheim.clone())),
+            ),
+            2 => Car::new(
+                "Firetruck",
+                "BWL A 1",
+                1111.1,
+                Arc::new(Mutex::new(heidelberg_neunheim.clone())),
+            ),
+            _ => Car::new(
+                "Police",
+                "BWL A 1",
+                1111.1,
+                Arc::new(Mutex::new(heidelberg_weststadt.clone())),
+            ),
+        })
+        .collect::<Vec<Car>>();
+
+    let threads = cars
+        .into_iter()
+        .map(|car| car.drive(car_sender.clone()))
+        .collect::<Vec<JoinHandle<()>>>();
 
     // Mby impl trait for nicenesssss!!!
-    drop(tx);
+    drop(car_sender);
 
-    for payload in rx {
-        //
-        // Regex to extract the data:
-        // /(?'type'.+) (?'license_plate'\(.+ .+ .\)).*Lat: (?'Lat'\d+\.\d+), Lon: (?'Lon'\d*.\d*)gm/
-        //
-        let message = format!(
-            "PoliceCar ({}) [{:#?}% ({:#?}m of {:#?}m) traveled in {:#?}s] Lat: {:#?}, Lon: {:#?}",
-            payload.nr,
-            payload.progress as u64,
-            payload.traveled_distance as u64,
-            payload.length as u64,
-            payload.time_diff_in_s as u64,
-            payload.coords.0,
-            payload.coords.1
-        );
-
-        println!("{}", message);
-
-        redis::cmd("PUBLISH")
-            .arg("test")
-            .arg(message)
-            .query::<()>(&mut r_con)
-            .unwrap();
+    if let Err(error) = pub_sub::subscribe(String::from("Emergencies"), Arc::new(Mutex::new(cars)))
+    {
+        println!("{:?}", error);
+        panic!("{:?}", error);
+    } else {
+        println!("Connected to sub-queue!")
     }
 
-    thread1.join().unwrap();
-    thread2.join().unwrap();
-    thread3.join().unwrap();
+    for car in car_receiver {
+        //
+        // Regex to extract the data:
+        // /(?'type'\w+) (?'license_plate'\(\w+ \w+ \w\)).*Lat: (?'Lat'\d+\.\d+), Lon: (?'Lon'\d*.\d*)gm/
+        //
+        let message = format!(
+            "{} ({}) [{:#?}% ({:#?}m of {:#?}m) traveled in {:#?}s] Lat: {:#?}, Lon: {:#?}",
+            car.car_type,
+            car.license_plate,
+            car.progress as u64,
+            car.traveled_distance as u64,
+            car.path_length as u64,
+            car.lap_clock as u64,
+            car.coords.0,
+            car.coords.1
+        );
+        // println!("{}", message);
+
+        redis::cmd("PUBLISH")
+            .arg("All")
+            .arg(message.clone())
+            .query::<()>(&mut r_pub_con)
+            .unwrap();
+        redis::cmd("PUBLISH")
+            .arg(car.car_type)
+            .arg(message.clone())
+            .query::<()>(&mut r_pub_con)
+            .unwrap();
+        match car.channel {
+            Some(emergency) => redis::cmd("PUBLISH")
+                .arg(emergency.uuid)
+                .arg(message)
+                .query::<()>(&mut r_pub_con)
+                .unwrap(),
+            None => (),
+        }
+    }
+
+    threads.into_iter().for_each(|t| t.join().unwrap());
+
+    return Ok(());
 }
