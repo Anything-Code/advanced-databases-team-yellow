@@ -26,7 +26,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/v1/volunteers', require('./routes/volunteers'));
 app.route('/api/v1/resolve').post(async function(req, res) {
     try {                
-        //console.log(req.body.addr);
+        console.log(req.body.addr);
         const loc = await geocoder.geocode(req.body.addr);
         return res.status(200).json({
             type: 'Point',

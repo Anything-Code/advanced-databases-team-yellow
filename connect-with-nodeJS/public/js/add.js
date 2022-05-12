@@ -8,6 +8,7 @@ async function addVolunteer(e){
 
     if(volunteerId.value ==='' || volunteerAddress.value===''){
         alert('Please fill in fields');
+        return 0;
     }
 
     const sendBody ={
