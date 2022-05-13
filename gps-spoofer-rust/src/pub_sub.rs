@@ -18,19 +18,9 @@ pub async fn subscribe(
         loop {
             let msg = ps.get_message().unwrap();
             let payload: String = msg.get_payload().unwrap();
-            // println!("channel '{}': {}", msg.get_channel_name(), payload);
             tx.send(Either::Right(payload)).await.unwrap();
         }
     });
 
     Ok(handle)
-    // let _: () = conn
-    //     .subscribe(&[channel], |msg| {
-    //         let received: String = msg.get_payload().unwrap();
-
-    //         tx.send(Either::Right(received)).await;
-
-    //         return ControlFlow::Continue;
-    //     })
-    //     .unwrap();
 }

@@ -10,7 +10,7 @@ pub fn connect() -> Result<Connection, Box<dyn Error>> {
     return Ok(con);
 }
 
-pub fn test() -> Result<(), Box<dyn Error>> {
+pub fn _test() -> Result<(), Box<dyn Error>> {
     let mut connection = connect().unwrap();
 
     let (k1, k2): (i32, i32) = redis::pipe()

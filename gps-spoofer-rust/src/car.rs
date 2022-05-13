@@ -1,7 +1,7 @@
 use crate::paths::{calc_current_coords, progress_percent, traveled_distance};
 use either::Either;
-use geo::{coord, prelude::HaversineLength, Coordinate, LineString};
-use std::{error::Error, sync::mpsc::SyncSender, time::Instant};
+use geo::{prelude::HaversineLength, Coordinate, LineString};
+use std::{error::Error, time::Instant};
 use tokio::sync::mpsc;
 use Either::Left;
 
@@ -136,14 +136,6 @@ pub async fn drive(
         let mut init_clock = Instant::now();
 
         loop {
-            if car.cancel_driving {
-                break;
-            }
-            if car.stopped {
-                car_sender.send(Left(car.clone())).await.unwrap();
-                continue;
-            }
-
             // let total_time_passed = init_full_time.elapsed().as_secs_f64();
             let lap_clock = init_clock.elapsed().as_secs_f64();
             let traveled_distance = traveled_distance(car.speed.clone(), lap_clock);
@@ -160,7 +152,7 @@ pub async fn drive(
                         None,
                         Some(progress),
                         Some(traveled_distance),
-                        None,
+                        Some(length),
                         Some(lap_clock),
                         Some(coords),
                         None,
@@ -171,11 +163,12 @@ pub async fn drive(
                     car = new_car;
                 }
                 Err(e) => {
-                    println!("\n{}", e);
                     if infinite {
+                        println!("\n{}", e);
                         init_clock = Instant::now();
                     } else {
-                        break;
+                        car_sender.send(Left(car)).await.unwrap();
+                        // break;
                     };
                 }
             }

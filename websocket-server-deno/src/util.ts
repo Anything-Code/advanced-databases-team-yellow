@@ -1,5 +1,5 @@
 import { RedisChannelLookup } from './types.ts';
-import { Redis, RedisSubscription, WebSocket } from './deps.ts';
+import { WebSocket } from './deps.ts';
 
 export function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));

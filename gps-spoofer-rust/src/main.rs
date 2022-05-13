@@ -33,10 +33,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // This loop terminates once all mpsc::Senders of rx are dropped
     //
-    // Regex to extract the data:
-    // /(?'type'\w+) (?'license_plate'\(\w+ \w+ \w\)).*Lat: (?'Lat'\d+\.\d+), Lon: (?'Lon'\d*.\d*)gm/
+    // Regex (EXMAScript-specification) to extract the data:
+    // With channel: (?<channel>\w+): (?<type>\w+) (?<license_plate>\(\w+_\w+_\w\)).*Lat: (?<Lat>\d+\.\d+), Lon: (?<Lon>\d*.\d*)
+    // Without channel /(?<type>\w+) (?<license_plate>\(\w+_\w+_\w\)).*Lat: (?<Lat>\d+\.\d+), Lon: (?<Lon>\d*.\d*)gm/
     //
-    println!("\nChannel ready...");
+    println!("\nmpsc::Channel ready...");
     while let Some(res) = rx.recv().await {
         match res {
             Either::Left(car) => {
@@ -74,7 +75,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
             // Exp: PUBLISH Emergencies "Join stabbing BWL_A_1 49.3784348 8.657238054886221"
             Either::Right(message) => {
-                let join_reg = Regex::new(r"(Join) (\w+) (\w+) (\d+.\d+) (\d+.\d+)").unwrap();
+                let join_reg = Regex::new(r"(Join) (#\w+-\d+) (\w+) (\d+.\d+) (\d+.\d+)").unwrap();
                 let leave_reg = Regex::new(r"(Leave) (\w+)").unwrap();
 
                 if leave_reg.is_match(message.as_str()) {
@@ -110,27 +111,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 if join_reg.is_match(message.as_str()) {
                     for m in join_reg.captures_iter(&message) {
                         let command = &m[1];
-                        let emergency = &m[2];
+                        let uuid = string_to_static_str(String::from(&m[2]));
                         let car_plate = &m[3];
                         let lat = m[4].parse::<f64>().unwrap();
                         let lon = m[5].parse::<f64>().unwrap();
 
-                        println!("\n{} {} {} {} {}", command, emergency, car_plate, lat, lon);
+                        println!("\n{} {} {} {} {}", command, uuid, car_plate, lat, lon);
                         if car_plate == police_car.license_plate
                             || car_plate == ambulance.license_plate
                             || car_plate == firetruck.license_plate
                         {
                             let path =
                                 LineString::from(vec![police_car.coords, coord! {x: lat, y: lon}]);
-                            let uuid_fmt = format!("{} {}", emergency, cuid::cuid().unwrap());
-                            let uuid = string_to_static_str(uuid_fmt);
 
                             if car_plate == police_car.license_plate {
                                 t1.abort();
 
                                 police_car.emergency = Some(Emergency {
                                     uuid,
-                                    address: "Alfred-Jost-Straße 38",
+                                    address: "Ludwig-Guttmann-Straße 6",
                                     lat,
                                     lon,
                                 });
@@ -156,7 +155,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
                                 firetruck.emergency = Some(Emergency {
                                     uuid,
-                                    address: "Alfred-Jost-Straße 38",
+                                    address: "Uferstraße 56",
                                     lat,
                                     lon,
                                 });
@@ -169,7 +168,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
         }
     }
-    println!("\nChannel closed!");
+    println!("\nmpsc::Channel closed!");
 
     // Mby impl trait for nicenesssss!!!
     // drop(tx);
