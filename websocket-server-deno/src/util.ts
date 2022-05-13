@@ -14,8 +14,12 @@ export class Streamer {
     }
 
     public async append(newChannel: RedisChannelLookup) {
-        this.emergencyChannels = [...this.emergencyChannels, newChannel];
-        await this.stream();
+        try {
+            this.emergencyChannels = [...this.emergencyChannels, newChannel];
+            await this.stream();
+        } catch (error) {
+            console.log(error);
+        }
     }
     public remove(key: string) {
         this.emergencyChannels = this.emergencyChannels.filter((item) => item.key !== key);
@@ -29,8 +33,12 @@ export class Streamer {
 
     async stream() {
         for (const emergencyChannel of this.emergencyChannels) {
-            for await (const { channel, message } of emergencyChannel.value.receive()) {
-                this.socket.send(`${channel}: ${message}`);
+            try {
+                for await (const { channel, message } of emergencyChannel.value.receive()) {
+                    this.socket.send(`${channel}: ${message}`);
+                }
+            } catch (error) {
+                console.log(error);
             }
         }
     }
