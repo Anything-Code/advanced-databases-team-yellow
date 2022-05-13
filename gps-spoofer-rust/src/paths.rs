@@ -1,11 +1,9 @@
 use geo::{
-    algorithm::line_interpolate_point::LineInterpolatePoint, GeometryCollection, LineString, Point,
+    algorithm::line_interpolate_point::LineInterpolatePoint, coord, Coordinate, GeometryCollection,
+    LineString, Point,
 };
 use kml::{quick_collection, KmlReader};
-use std::{
-    path::Path,
-    sync::{Arc, Mutex, MutexGuard},
-};
+use std::path::Path;
 
 pub fn traveled_distance(speed: f64, time_passed: f64) -> f64 {
     return speed * time_passed;
@@ -26,16 +24,16 @@ pub fn calc_current_coords(
     length: f64,
     time_passed: f64,
     speed: f64,
-) -> Result<(f64, f64), &'static str> {
+) -> Result<Coordinate<f64>, &'static str> {
     let ratio = traveled_distance_ratio(length, time_passed, speed);
 
     if ratio > 1.0 {
-        return Err("Ratio cannot be greater than 1!");
+        return Err("1 Lap done (Ratio greater than 1)");
     }
 
     let coords = path.line_interpolate_point(ratio).unwrap();
 
-    return Ok((coords.y(), coords.x()));
+    return Ok(coord! {x: coords.x(), y: coords.y()});
 }
 
 pub fn read_kml(filename: &str) -> LineString<f64> {

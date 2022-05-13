@@ -2,48 +2,58 @@ mod car;
 mod connect_redis;
 mod paths;
 mod pub_sub;
+mod util;
 
-use car::Car;
+use crate::{car::Emergency, util::string_to_static_str};
+use car::{drive, Car};
 use either::Either;
+use geo::{coord, LineString};
 use regex::Regex;
-use std::{error::Error, sync::mpsc::sync_channel};
-
-fn car_by_plate(cars: Vec<Car>, plate: String) -> Vec<Car>{
-    return cars.iter().filter(|i| i.license_plate == plate);
-}
+use std::error::Error;
+use tokio::sync::mpsc;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let mut r_pub_con = connect_redis::connect().unwrap();
-    let (car_sender, car_receiver) = sync_channel::<Either<Car, String>>(1000);
+    let (tx, mut rx) = mpsc::channel(1000);
 
     let heidelberg_weststadt = paths::read_kml("heidelberg-weststadt.kml");
     let heidelberg_bergheim = paths::read_kml("heidelberg-bergheim.kml");
     let heidelberg_neunheim = paths::read_kml("heidelberg-neunheim.kml");
 
-    let police_car = Car::new("Police", "BWL_A_1", 1111.1, heidelberg_weststadt.clone());
-    let ambulance = Car::new("Ambulance", "BWL_A_2", 1111.1, heidelberg_bergheim.clone());
-    let firetruck = Car::new("Firetruck", "BWL_A_3", 1111.1, heidelberg_neunheim.clone());
+    let mut police_car = Car::new(
+        "Police",
+        "BWL_A_1",
+        11.1 * 4.0,
+        heidelberg_weststadt.clone(),
+    );
+    let mut ambulance = Car::new(
+        "Ambulance",
+        "BWL_A_2",
+        11.1 * 4.0,
+        heidelberg_bergheim.clone(),
+    );
+    let mut firetruck = Car::new(
+        "Firetruck",
+        "BWL_A_3",
+        11.1 * 4.0,
+        heidelberg_neunheim.clone(),
+    );
 
-    let mut t1 = police_car.drive(heidelberg_weststadt.clone(), car_sender.clone());
-    let mut t2 = ambulance.drive(heidelberg_bergheim.clone(), car_sender.clone());
-    let mut t3 = firetruck.drive(heidelberg_neunheim.clone(), car_sender.clone());
+    let mut t1 = drive(police_car, true, heidelberg_weststadt.clone(), tx.clone()).await?;
+    let mut t2 = drive(ambulance, true, heidelberg_bergheim.clone(), tx.clone()).await?;
+    let mut t3 = drive(firetruck, true, heidelberg_neunheim.clone(), tx.clone()).await?;
 
-    if let Err(error) = pub_sub::subscribe(String::from("Emergencies"), car_sender.clone()) {
-        println!("{:?}", error);
-        panic!("{:?}", error);
-    } else {
-        println!("Connected to sub-queue!")
-    }
+    pub_sub::subscribe(String::from("Emergencies"), tx.clone()).await?;
 
-    // Mby impl trait for nicenesssss!!!
-    drop(car_sender);
-
-    for res in car_receiver {
-        //
-        // Regex to extract the data:
-        // /(?'type'\w+) (?'license_plate'\(\w+ \w+ \w\)).*Lat: (?'Lat'\d+\.\d+), Lon: (?'Lon'\d*.\d*)gm/
-        //
+    // This loop terminates once all mpsc::Senders of rx are dropped
+    //
+    // Regex (EXMAScript-specification) to extract the data:
+    // With channel: (?<channel>\w+): (?<type>\w+) (?<license_plate>\(\w+_\w+_\w\)).*Lat: (?<Lat>\d+\.\d+), Lon: (?<Lon>\d*.\d*)
+    // Without channel /(?<type>\w+) (?<license_plate>\(\w+_\w+_\w\)).*Lat: (?<Lat>\d+\.\d+), Lon: (?<Lon>\d*.\d*)gm/
+    //
+    println!("\nmpsc::Channel ready...");
+    while let Some(res) = rx.recv().await {
         match res {
             Either::Left(car) => {
                 let message = format!(
@@ -54,8 +64,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     car.traveled_distance as u64,
                     car.path_length as u64,
                     car.lap_clock as u64,
-                    car.coords.0,
-                    car.coords.1
+                    car.coords.x,
+                    car.coords.y
                 );
                 // println!("{}", message);
 
@@ -69,7 +79,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     .arg(message.clone())
                     .query::<()>(&mut r_pub_con)
                     .unwrap();
-                match car.channel {
+                match car.emergency {
                     Some(emergency) => redis::cmd("PUBLISH")
                         .arg(emergency.uuid)
                         .arg(message)
@@ -78,43 +88,106 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     None => (),
                 }
             }
+            // Exp: PUBLISH Emergencies "Join stabbing BWL_A_1 49.3784348 8.657238054886221"
             Either::Right(message) => {
-                let re = Regex::new(r"(\w+) (\w+) (\w+)").unwrap();
+                let join_reg = Regex::new(r"(Join) (#\w+-\d+) (\w+) (\d+.\d+) (\d+.\d+)").unwrap();
+                let leave_reg = Regex::new(r"(Leave) (\w+)").unwrap();
 
-                if re.is_match(message.as_str()) {
-                    re.captures_iter(&message).for_each(|m| {
-                        let t = &m[1];
-                        let emergency = &m[2];
+                if leave_reg.is_match(message.as_str()) {
+                    for m in leave_reg.captures_iter(&message) {
+                        let command = &m[1];
+                        let car_plate = &m[2];
+
+                        println!("\n{} {}", command, car_plate);
+
+                        if car_plate == police_car.license_plate {
+                            police_car.emergency = None;
+                            t1.abort();
+                            t1 = drive(police_car, true, heidelberg_weststadt.clone(), tx.clone())
+                                .await?;
+                        }
+
+                        if car_plate == ambulance.license_plate {
+                            ambulance.emergency = None;
+                            t2.abort();
+                            t2 = drive(ambulance, true, heidelberg_bergheim.clone(), tx.clone())
+                                .await?;
+                        }
+
+                        if car_plate == firetruck.license_plate {
+                            firetruck.emergency = None;
+                            t3.abort();
+                            t3 = drive(firetruck, true, heidelberg_neunheim.clone(), tx.clone())
+                                .await?;
+                        }
+                    }
+                }
+
+                if join_reg.is_match(message.as_str()) {
+                    for m in join_reg.captures_iter(&message) {
+                        let command = &m[1];
+                        let uuid = string_to_static_str(String::from(&m[2]));
                         let car_plate = &m[3];
+                        let lat = m[4].parse::<f64>().unwrap();
+                        let lon = m[5].parse::<f64>().unwrap();
 
-                        let mut car;
+                        println!("\n{} {} {} {} {}", command, uuid, car_plate, lat, lon);
+                        if car_plate == police_car.license_plate
+                            || car_plate == ambulance.license_plate
+                            || car_plate == firetruck.license_plate
+                        {
+                            let path =
+                                LineString::from(vec![police_car.coords, coord! {x: lat, y: lon}]);
 
-                        if let car =  {
-                            
-                        }
+                            if car_plate == police_car.license_plate {
+                                t1.abort();
 
-                        if police_car.license_plate == car_plate {
-                            car = police_car;
-                        }
-                        if ambulance.license_plate == car_plate {
-                            car = ambulance;
-                        }
-                        if firetruck.license_plate == car_plate {
-                            car = firetruck;
-                        }
+                                police_car.emergency = Some(Emergency {
+                                    uuid,
+                                    address: "Ludwig-Guttmann-Straße 6",
+                                    lat,
+                                    lon,
+                                });
 
-                        if t == "Join" && car.license_plate == car_plate {
-                            println!("{}", car.license_plate)
+                                t1 = drive(police_car, false, path.clone(), tx.clone()).await?;
+                            }
+
+                            if car_plate == ambulance.license_plate {
+                                t2.abort();
+
+                                ambulance.emergency = Some(Emergency {
+                                    uuid,
+                                    address: "Alfred-Jost-Straße 38",
+                                    lat,
+                                    lon,
+                                });
+
+                                t2 = drive(ambulance, false, path.clone(), tx.clone()).await?;
+                            }
+
+                            if car_plate == firetruck.license_plate {
+                                t3.abort();
+
+                                firetruck.emergency = Some(Emergency {
+                                    uuid,
+                                    address: "Uferstraße 56",
+                                    lat,
+                                    lon,
+                                });
+
+                                t3 = drive(firetruck, false, path.clone(), tx.clone()).await?;
+                            }
                         }
-                    });
+                    }
                 }
             }
         }
     }
+    println!("\nmpsc::Channel closed!");
 
-    t1.join().unwrap();
-    t2.join().unwrap();
-    t3.join().unwrap();
+    // Mby impl trait for nicenesssss!!!
+    // drop(tx);
+    drop(rx);
 
     Ok(())
 }
