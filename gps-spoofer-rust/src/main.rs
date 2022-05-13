@@ -21,9 +21,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let heidelberg_bergheim = paths::read_kml("heidelberg-bergheim.kml");
     let heidelberg_neunheim = paths::read_kml("heidelberg-neunheim.kml");
 
-    let mut police_car = Car::new("Police", "BWL_A_1", 1111.1, heidelberg_weststadt.clone());
-    let mut ambulance = Car::new("Ambulance", "BWL_A_2", 1111.1, heidelberg_bergheim.clone());
-    let mut firetruck = Car::new("Firetruck", "BWL_A_3", 1111.1, heidelberg_neunheim.clone());
+    let mut police_car = Car::new("Police", "BWL_A_1", 11.1, heidelberg_weststadt.clone());
+    let mut ambulance = Car::new("Ambulance", "BWL_A_2", 11.1, heidelberg_bergheim.clone());
+    let mut firetruck = Car::new("Firetruck", "BWL_A_3", 11.1, heidelberg_neunheim.clone());
 
     let mut t1 = drive(police_car, true, heidelberg_weststadt.clone(), tx.clone()).await?;
     let mut t2 = drive(ambulance, true, heidelberg_bergheim.clone(), tx.clone()).await?;

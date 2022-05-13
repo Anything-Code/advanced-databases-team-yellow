@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import logo from "./logo.svg";
 import "./App.css";
-import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import { MapContainer, Marker, Polyline, Popup, TileLayer } from "react-leaflet";
 import layers from "leaflet/dist/images/layers.png";
 import layers2x from "leaflet/dist/images/layers-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
@@ -76,15 +76,15 @@ function App() {
   const [manhuntPos, setManhuntPos] = useState<{
     lat: number;
     lng: number;
-  }>({lng: 8.6508929, lat: 49.4141772});
+  }>({ lng: 8.6508929, lat: 49.4141772 });
   const [stabbingPos, setStabbingPos] = useState<{
     lat: number;
     lng: number;
-  }>({lng: 8.657238054886221, lat: 49.3784348});
+  }>({ lng: 8.657238054886221, lat: 49.3784348 });
   const [firehazardPos, setFirehazardPos] = useState<{
     lat: number;
     lng: number;
-  }>({lng: 8.6839833, lat: 49.41273485});
+  }>({ lng: 8.6839833, lat: 49.41273485 });
 
   return (
     <MapContainer
@@ -105,7 +105,7 @@ function App() {
           })
         }
       >
-        <Popup>#Manhunt-1 BWL_A_1 8.6508929 49.4141772</Popup>
+        <Popup>#Manhunt-1 8.6508929 49.4141772</Popup>
       </Marker>
 
       <Marker
@@ -116,7 +116,7 @@ function App() {
           })
         }
       >
-        <Popup>#Stabbing-1 BWL_A_2 8.657238054886221 49.3784348</Popup>
+        <Popup>#Stabbing-1 8.657238054886221 49.3784348</Popup>
       </Marker>
 
       <Marker
@@ -127,8 +127,12 @@ function App() {
           })
         }
       >
-        <Popup>#Firehazard-1 BWL_A_3 8.6839833 49.41273485</Popup>
+        <Popup>#Firehazard-1 8.6839833 49.41273485</Popup>
       </Marker>
+
+        <Polyline positions={[policePos, ambulancePos]} />
+        <Polyline positions={[ambulancePos, firetruckPos]} />
+        <Polyline positions={[firetruckPos, policePos]} />
 
       <Marker
         position={policePos}
@@ -140,9 +144,7 @@ function App() {
           })
         }
       >
-        <Popup>
-          A pretty CSS3 popup. <br /> Easily customizable.
-        </Popup>
+        <Popup>BWL_A_1</Popup>
       </Marker>
 
       <Marker
@@ -155,9 +157,7 @@ function App() {
           })
         }
       >
-        <Popup>
-          A pretty CSS3 popup. <br /> Easily customizable.
-        </Popup>
+        <Popup>BWL_A_2</Popup>
       </Marker>
 
       <Marker
@@ -170,9 +170,7 @@ function App() {
           })
         }
       >
-        <Popup>
-          A pretty CSS3 popup. <br /> Easily customizable.
-        </Popup>
+        <Popup>BWL_A_3</Popup>
       </Marker>
     </MapContainer>
   );
