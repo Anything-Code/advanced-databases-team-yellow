@@ -8,3 +8,4 @@ export {
     WebSocketServer,
 } from 'https://deno.land/x/websocket_server@1.0.2/mod.ts';
 export { connect } from 'https://deno.land/x/redis@v0.25.5/mod.ts';
+export type { RedisSubscription, Redis } from 'https://deno.land/x/redis@v0.25.5/mod.ts';
